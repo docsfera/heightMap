@@ -1,0 +1,82 @@
+body{
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    line-height: 1.5;
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+}
+
+.d3d-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(134 134 134);
+}
+.foreground {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/*3D annotations*/
+.annotation-3d
+{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border-radius: 10px;
+    background: #00000077;
+    border: 1px solid #ffffff77;
+    line-height: 20px;
+    padding-inline: 15px;
+    font-weight: 100;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    opacity: 0;
+    color: #ffffff;
+    display: none;
+    /* transition-property: display opacity; */
+    transition: display 0.3s, opacity 0.3s;
+    transition-behavior: allow-discrete;
+}
+
+p.ann-label
+{
+
+}
+
+p.ann-text
+{
+    display: none;
+}
+
+.ann-btn
+{
+    margin-top: 10px;
+}
+
+.ann-text.visible
+{
+    display: block;
+}
+
+.annotation-3d.visible
+{
+    display: block;
+    opacity: 1;
+}
+
+#test-video
+{
+    display: none;
+
+}

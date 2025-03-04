@@ -1,0 +1,5 @@
+node_modules
+build
+source_3d/*.blend1
+source_3d/_garbage
+source_3d/garbage
