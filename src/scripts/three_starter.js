@@ -64,6 +64,9 @@ scene.activeRenderer = renderer;
 scene.renderer = renderer;
 scene.composer = null;
 
+
+let plane, material
+
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
 		scene.add(gltf.scene);
@@ -106,51 +109,25 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 
         const uniforms = {
-        	newPos: geometry.attributes.position.array
+        	uDisplacementMap: { value: displacement },
+            uDisplacementScale: { value: 1.0 },
+            uTime: { value: 0.0 },
         }
 
-        const material = new CustomShaderMaterial({
+        material = new CustomShaderMaterial({
 	        baseMaterial: baseMaterial,
-	        // vertexShader: shaderV,
-	        // fragmentShader: shaderF,
-	        // uniforms: uniforms,
+	        vertexShader: shaderV,
+	        fragmentShader: shaderF,
+	        uniforms: uniforms,
 	    });
 
-	    const plane = new THREE.Mesh(geometry, material);
+	    plane = new THREE.Mesh(geometry, material);
 
         
         plane.rotation.x = -Math.PI / 2;
 
         plane.position.y = 0.1
         scene.add(plane);
-
-
-        plane.geometry.attributes.position.needsUpdate = true;
-
-
-		plane.geometry.attributes.position.array = new Float32Array(
-		    plane.geometry.attributes.position.array
-		);
-		plane.geometry.computeBoundingBox();
-		plane.geometry.computeBoundingSphere();
-
-		const positions = plane.geometry.attributes.position.array;
-		for (let i = 0; i < positions.length; i += 3) {
-		    const x = positions[i];
-		    const y = positions[i + 1];
-		    const z = positions[i + 2];
-		    console.log(`Vertex ${i / 3}: (${x}, ${y}, ${z})`);
-		}
-
-		const newPositions = new Float32Array(positions);
-		plane.geometry.setAttribute('position', new THREE.BufferAttribute(newPositions, 3));
-
-		plane.geometry.computeBoundingBox();
-		plane.geometry.computeBoundingSphere();
-
-
-
-
 
 
 		/////////////////////
@@ -213,6 +190,8 @@ function animate() {
 	clippingPlanes.update();
 
 	materials.updatableMaterials.forEach(mat => mat.animationUpdate(deltaTime))
+
+	material.uniforms.uTime.value += 0.01;
 
 	// renderer.render(scene, activeCamera);
 	// composer.render();
