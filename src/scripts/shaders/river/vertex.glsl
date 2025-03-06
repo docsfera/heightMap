@@ -11,10 +11,10 @@ void main(){
 vUv = uv;
     //pos = position;
 
-    float displacement = texture2D(uDisplacementMap, uv).r * uDisplacementScale;
+    float displacement = texture2D(uDisplacementMap, uv).r * uDisplacementScale ;
 
     // Модифицируем позицию вершины
-    vec3 newPosition = position + normal * displacement;
+    vec3 newPosition = position + normal * displacement ;
 
     pos = newPosition;
 

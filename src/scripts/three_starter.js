@@ -18,6 +18,8 @@ import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
 import shaderV from './shaders/river/vertex.glsl'
 import shaderF from './shaders/river/fragment.glsl'
+import waterV from './shaders/water/vertex.glsl'
+import waterF from './shaders/water/fragment.glsl'
 
 const container3D = document.querySelector(".d3d-container");
 const foreground = document.querySelector(".foreground");
@@ -64,8 +66,10 @@ scene.activeRenderer = renderer;
 scene.renderer = renderer;
 scene.composer = null;
 
+//scene.fog = new THREE.Fog( 0xcccccc, 1, 1500 );
 
-let plane, material
+
+let plane, flatPlane, material, flatMaterial
 
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
@@ -87,9 +91,9 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		// scene.add(mesh)
 
-		const width = 10;
-        const height = 10;
-        const segments = 100;
+		const width = 200;
+        const height = 200;
+        const segments = 1024;
 
         const loader = new THREE.TextureLoader();
         const displacement = loader.load('./3d/map2.jpg');
@@ -102,8 +106,10 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
             map:map,
             //wireframe: true,
             displacementMap: displacement,
-            displacementScale: 1
+            displacementScale: 30
         });
+
+       
 
         
 
@@ -121,12 +127,28 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	        uniforms: uniforms,
 	    });
 
+	    flatMaterial = new CustomShaderMaterial({
+	        baseMaterial: new THREE.MeshStandardMaterial({color: "#A5CDDB", fog: true}),
+	        vertexShader: waterV,
+	        fragmentShader: waterF,
+	        uniforms: {uTime: { value: 0.0 }},
+	    });
+
 	    plane = new THREE.Mesh(geometry, material);
+	    flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000, 2, 2), flatMaterial)
+
+	    //flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 2, 2), flatMaterial)
+
+        scene.add(flatPlane)
 
         
         plane.rotation.x = -Math.PI / 2;
+        flatPlane.rotation.x = -Math.PI / 2;
+
+        //flatPlane.position.x = 200
 
         plane.position.y = 0.1
+        flatPlane.position.y = 5
         scene.add(plane);
 
 
@@ -192,6 +214,7 @@ function animate() {
 	materials.updatableMaterials.forEach(mat => mat.animationUpdate(deltaTime))
 
 	material.uniforms.uTime.value += 0.01;
+	flatMaterial.uniforms.uTime.value += 0.01;
 
 	// renderer.render(scene, activeCamera);
 	// composer.render();
