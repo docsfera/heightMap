@@ -106,7 +106,8 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
             map:map,
             //wireframe: true,
             displacementMap: displacement,
-            displacementScale: 30
+            displacementScale: 30,
+            onBeforeCompile: (shader1) => {console.log({shader1})}
         });
 
        
@@ -125,17 +126,56 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	        vertexShader: shaderV,
 	        fragmentShader: shaderF,
 	        uniforms: uniforms,
+	        onBeforeCompile: (shader) => {console.log({shader})}
 	    });
 
-	    flatMaterial = new CustomShaderMaterial({
-	        baseMaterial: new THREE.MeshStandardMaterial({color: "#A5CDDB", fog: true}),
-	        vertexShader: waterV,
-	        fragmentShader: waterF,
-	        uniforms: {uTime: { value: 0.0 }},
+	    // flatMaterial = new CustomShaderMaterial({
+	    //     baseMaterial: new THREE.MeshStandardMaterial({color: "#A5CDDB", fog: true}),
+	    //     vertexShader: waterV,
+	    //     fragmentShader: waterF,
+	    //     uniforms: {uTime: { value: 0.0 }},
+	    // });
+
+	    flatMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x00ffff, //Red
+            
+        });
+
+	    flatMaterial = new THREE.ShaderMaterial({
+	    	uniforms: THREE.UniformsUtils.merge( [
+				THREE.UniformsLib[ 'fog' ], {
+					uTime: {value: 0.0}
+				}
+      ] ),
+	    	vertexShader: waterV,
+	    	fragmentShader: waterF,
+	   //      vertexShader: `
+		  //       #include <fog_pars_vertex>
+
+				// void main()	{
+				// 	//gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				// 	#include <begin_vertex>
+			 //        #include <project_vertex>
+			 //        #include <fog_vertex>
+				// }
+	   //      `,
+	   //      fragmentShader: `
+	   //      	#include <fog_pars_fragment>
+	   //      	void main(){
+	   //      		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Красный цвет
+	   //      		#include <fog_fragment>
+	   //      	}
+	   //      `,
+	        fog: true,
+
 	    });
 
-	    plane = new THREE.Mesh(geometry, material);
-	    flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(10000, 10000, 2, 2), flatMaterial)
+	    
+
+
+
+	    plane = new THREE.Mesh(geometry, baseMaterial);
+	    flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 2, 2), flatMaterial)
 
 	    //flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 2, 2), flatMaterial)
 
@@ -148,8 +188,18 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
         //flatPlane.position.x = 200
 
         plane.position.y = 0.1
-        flatPlane.position.y = 5
+        flatPlane.position.y = 2
         scene.add(plane);
+
+
+
+		/////////////////////
+
+		scene.getObjectByName("suzanne").visible = false
+		scene.getObjectByName("curve").visible = false
+		scene.getObjectByName("cube").visible = false
+		scene.getObjectByName("sphere").visible = false
+		scene.getObjectByName("slim_cube").visible = false
 
 
 		/////////////////////

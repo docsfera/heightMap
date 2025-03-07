@@ -1,11 +1,11 @@
-
+#include <fog_pars_fragment>
 uniform float uTime;
 varying vec2 vUv;
 
 void main(){
 
 		// Normalized UV coordinates (from 0 to 1)
-	    vec2 uv = vUv;
+	     vec2 uv = vUv;
 	    
 	    // Time varying for animation
 	    float t = uTime * 0.5;
@@ -20,7 +20,7 @@ void main(){
 	    //float noise = fract(sin(dot(uv + t * 0.1, vec2(12.9898,78.233))) * 43758.5453) * 0.1;
 	    
 	    // Distort UV coordinates for ripples
-	    vec2 distortedUV = uv * 8.0 + wave  ;
+	    vec2 distortedUV = uv + wave ;
 	    
 	    // Base water color (blue-green gradient)
 	    vec3 baseColor = vec3(0.0, 0.3, 0.6); // Deep blue
@@ -40,16 +40,13 @@ void main(){
 	    
 	    // Add subtle specular highlights
 	    float specular = pow(max(0.0, reflection), 10.0);
-
-
-
-
 	    waterColor += vec3(1.0) * specular * 0.5;
-
-	    float fogFactor1 = 1.0 - exp(-0.5 * 0.5 * 1.1 * 1.1);
 	    
 	    // Output to screen
-	    csm_FragColor = mix(vec4(waterColor, 1.0), vec4(1.0, 0.0, 0.0, 1.0), fogFactor1);
+	    gl_FragColor = vec4(waterColor, 1.0);
+
+
+	    #include <fog_fragment>
 	
     
 }
