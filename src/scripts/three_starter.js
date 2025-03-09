@@ -71,6 +71,17 @@ scene.composer = null;
 
 let plane, flatPlane, material, flatMaterial
 
+
+class InstancedFloat16BufferAttribute extends THREE.InstancedBufferAttribute {
+
+	constructor( array, itemSize, normalized, meshPerAttribute = 1 ) {
+
+		super( new Uint16Array( array ), itemSize, normalized, meshPerAttribute );
+
+		this.isFloat16BufferAttribute = true;
+	}
+};
+
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
 		scene.add(gltf.scene);
@@ -129,13 +140,6 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	        onBeforeCompile: (shader) => {console.log({shader})}
 	    });
 
-	    // flatMaterial = new CustomShaderMaterial({
-	    //     baseMaterial: new THREE.MeshStandardMaterial({color: "#A5CDDB", fog: true}),
-	    //     vertexShader: waterV,
-	    //     fragmentShader: waterF,
-	    //     uniforms: {uTime: { value: 0.0 }},
-	    // });
-
 	    flatMaterial = new THREE.MeshStandardMaterial({ 
             color: 0x00ffff, //Red
             
@@ -146,51 +150,256 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 				THREE.UniformsLib[ 'fog' ], {
 					uTime: {value: 0.0}
 				}
-      ] ),
+      		]),
 	    	vertexShader: waterV,
 	    	fragmentShader: waterF,
-	   //      vertexShader: `
-		  //       #include <fog_pars_vertex>
-
-				// void main()	{
-				// 	//gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-				// 	#include <begin_vertex>
-			 //        #include <project_vertex>
-			 //        #include <fog_vertex>
-				// }
-	   //      `,
-	   //      fragmentShader: `
-	   //      	#include <fog_pars_fragment>
-	   //      	void main(){
-	   //      		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Красный цвет
-	   //      		#include <fog_fragment>
-	   //      	}
-	   //      `,
 	        fog: true,
-
 	    });
 
-	    
-
-
+	   
 
 	    plane = new THREE.Mesh(geometry, baseMaterial);
 	    flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 2, 2), flatMaterial)
 
-	    //flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 2, 2), flatMaterial)
-
-        scene.add(flatPlane)
-
-        
-        plane.rotation.x = -Math.PI / 2;
-        flatPlane.rotation.x = -Math.PI / 2;
-
-        //flatPlane.position.x = 200
+        plane.rotation.x = -Math.PI / 2
+        flatPlane.rotation.x = -Math.PI / 2
 
         plane.position.y = 0.1
         flatPlane.position.y = 2
-        scene.add(plane);
 
+        // scene.add(plane)
+        // scene.add(flatPlane)
+
+        ////// GRASSS ///////
+
+//         const GRASS_WIDTH = 0.1;
+// 		const GRASS_HEIGHT = 1.5;
+// 		const GRASS_SEGMENTS = 6;
+// 		const GRASS_PATCH_SIZE = 10;
+// 		const NUM_GRASS = 1000;
+
+// 		class SimpleGrass {
+// 		  constructor() {
+// 		    this.group = new THREE.Group();
+// 		    this.geometry = this.createGrassGeometry();
+// 		    //this.material = new shaders.GameMaterial('GRASS');
+// 		    this.material = new THREE.MeshStandardMaterial({color: "#ff0000", wireframe: true});
+// 		    this.mesh = new THREE.Mesh(this.geometry, this.material);
+// 		    this.mesh.name = "grass"
+		    
+// 		    this.configureMaterial();
+// 		    this.group.add(this.mesh);
+// 		  }
+
+// 		  createGrassGeometry() {
+// 		    const geometry = new THREE.InstancedBufferGeometry();
+// 		    const offsets = [];
+
+// 		    // Генерация случайных позиций
+// 		    for (let i = 0; i < NUM_GRASS; i++) {
+// 		      offsets.push(
+// 		        // math.rand_range(-GRASS_PATCH_SIZE, GRASS_PATCH_SIZE),
+// 		        // math.rand_range(-GRASS_PATCH_SIZE, GRASS_PATCH_SIZE),
+// 		        // 0
+// 		       (Math.random() * GRASS_PATCH_SIZE * 2 - GRASS_PATCH_SIZE ),
+// 		       (Math.random() * GRASS_PATCH_SIZE * 2 - GRASS_PATCH_SIZE ),
+//                 0
+// 		      );
+// 		    }
+
+// 		    // Настройка атрибутов
+// 		    geometry.setAttribute(
+// 		      'position',
+// 		      new THREE.InstancedBufferAttribute(new Float32Array(offsets), 3)
+// 		    );
+
+// 		    // Простая геометрия стебля травы
+// 		    const vertices = new Float32Array([
+// 		      0, 0, 0,
+// 		      GRASS_WIDTH, 0, 0,
+// 		      0, GRASS_HEIGHT, 0
+// 		    ]);
+
+// 		    geometry.setAttribute('vertPosition', new THREE.BufferAttribute(vertices, 3));
+// 		    geometry.setIndex([0, 1, 2]);
+
+// 		    return geometry;
+// 		  }
+
+// 		  configureMaterial() {
+// 		    // this.material.setVec2('grassSize', new THREE.Vector2(GRASS_WIDTH, GRASS_HEIGHT));
+// 		    // this.material.alphaTest = 0.5;
+// 		    this.material.side = THREE.DoubleSide;
+// 		  }
+
+// 		  addToScene(scene) {
+// 		    scene.add(this.group);
+// 		  }
+// 		}
+
+// 		const grass = new SimpleGrass();
+// grass.addToScene(scene);
+
+
+		const grassGeometry = new THREE.PlaneGeometry(50, 50, 150, 150);
+		const grassMaterial = new THREE.MeshStandardMaterial({
+		  color: new THREE.Color(0.05, 0.2, 0.01),
+		  //wireframe: true
+		})
+
+		const grassMesh = new THREE.Mesh(grassGeometry, grassMaterial);
+
+		// Поворачиваем плоскость ДО вычисления позиций
+		grassMesh.rotation.x = -Math.PI / 2;
+
+		// Обновляем матрицу преобразований плоскости
+		grassMesh.updateMatrixWorld(true);
+
+		// Получаем мировые координаты вершин
+		const positions = grassGeometry.attributes.position.array;
+		const worldPosition = new THREE.Vector3();
+
+
+		const grassShaderMat = new THREE.ShaderMaterial({ 
+
+		    	vertexShader: `
+		    		#include <fog_pars_vertex>
+		    		varying vec2 vUv;
+			    	void main(){
+			    		vUv = uv;
+			    		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+			    		#include <begin_vertex>
+						#include <project_vertex>
+						#include <fog_vertex>
+			    	}
+		    	`,
+		    	fragmentShader: `
+		    		#include <fog_pars_fragment>
+		    		varying vec2 vUv;
+			    	void main(){
+
+			    		vec3 baseColor = vec3(0.05, 0.2, 0.01);
+			    		vec3 tipColor = vec3(0.5, 0.5, 0.1);
+
+
+			    		vec3 clr = mix(baseColor, tipColor, vUv.x);
+
+			    		//gl_FragColor = vec4(0.0,vUv.x, 0.0, 1.0);
+			    		gl_FragColor = vec4(clr, 1.0);
+
+			    		#include <fog_fragment>
+			    	}
+		    	`,
+		    	uniforms: THREE.UniformsUtils.merge( [
+				THREE.UniformsLib[ 'fog' ], {
+					uTime: {value: 0.0}
+				}
+      		]),
+		    	side: THREE.DoubleSide,
+		    	//fog: true,
+
+		    })
+
+		  // UV-координаты для текстур
+		const uvs = new Float32Array([
+			    // Первый треугольник
+			    0, 0,    // vertex 0
+			    1, 0.33, // vertex 1
+			    1, 0,    // vertex 2
+
+			    // Второй треугольник
+			    0, 0,    // vertex 3
+			    1, 0.33, // vertex 4
+			    0, 0.33, // vertex 5
+
+			    // Третий треугольник
+			    0, 0.33, // vertex 6
+			    1, 0.66, // vertex 7
+			    1, 0.33, // vertex 8
+
+			    // Четвертый треугольник
+			    0, 0.33, // vertex 9
+			    1, 0.66, // vertex 10
+			    0, 0.66, // vertex 11
+
+			    // Пятый треугольник
+			    0, 0.66, // vertex 12
+			    0.5, 1,  // vertex 13
+			    1, 0.66, // vertex 14
+			]);
+
+			// Индексы для всех треугольников
+			const indices = new Uint16Array([
+			    0, 1, 2,   // Первый треугольник
+			    3, 4, 5,   // Второй треугольник
+			    6, 7, 8,   // Третий треугольник
+			    9, 10, 11, // Четвертый треугольник
+			    12, 13, 14 // Пятый треугольник
+			]);
+
+
+		//const rand = Math.random()
+
+		for (let i = 0; i < positions.length; i += 3) {
+
+		  // Преобразуем локальные координаты в мировые
+		  worldPosition.set(
+		    positions[i],
+		    positions[i + 1],
+		    positions[i + 2]
+		  );
+		  
+		  grassMesh.localToWorld(worldPosition);
+		  
+		  const faceHeight = 0.4
+		  const grassAngleSide = Math.round(Math.random()) * 2 - 1
+		  const grassAngle = 0.1 * grassAngleSide
+
+		  const pa = new Float32Array([
+		  	-0.1, faceHeight * 0, 0,
+		  	0.0, faceHeight * 1, 0,
+		  	0.0, faceHeight * 0, 0,
+
+		  	-0.1, faceHeight * 0, 0,
+		  	0.0, faceHeight * 1, 0,
+		  	-0.1, faceHeight * 1, 0,
+
+		  	-0.1, faceHeight * 1, 0,
+		  	0.0, faceHeight * 2, grassAngle,
+		  	0.0, faceHeight * 1, 0,
+
+		  	-0.1, faceHeight * 1, 0,
+		  	0.0, faceHeight * 2, grassAngle,
+		  	-0.1, faceHeight * 2, grassAngle,
+
+		  	-0.1, faceHeight * 2, grassAngle,
+		  	-0.05, faceHeight * 3, grassAngle * 3,
+		  	0.0, faceHeight * 2, grassAngle,
+		  ])
+
+		
+		  const pat = new THREE.BufferAttribute(pa, 3)
+		  const geom = new THREE.BufferGeometry()
+
+		  geom.setAttribute('position', new THREE.BufferAttribute(pa, 3));
+			geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+			geom.setIndex(new THREE.BufferAttribute(indices, 1));
+
+		  const cube = new THREE.Mesh(geom, grassShaderMat) 
+		  
+		  scene.add(cube);
+
+		  cube.position.copy(worldPosition);
+
+		  cube.position.x = cube.position.x + Math.random() * 0.8
+		  cube.position.z = cube.position.z + Math.random() * 0.8
+
+		  cube.rotation.y = Math.PI / 2 * (Math.random() - 0.5)
+
+		}
+
+		scene.add(grassMesh);
 
 
 		/////////////////////
@@ -200,6 +409,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		scene.getObjectByName("cube").visible = false
 		scene.getObjectByName("sphere").visible = false
 		scene.getObjectByName("slim_cube").visible = false
+		scene.getObjectByName("floor").visible = false
 
 
 		/////////////////////
