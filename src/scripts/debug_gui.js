@@ -3,9 +3,9 @@ import GUI from 'lil-gui';
 const gui = new GUI();
 window.gui = gui;
 
-gui.onFinishChange(() => {
-    window.localStorage.setItem('gui', JSON.stringify(gui.save()))
-});
+// gui.onFinishChange(() => {
+//     window.localStorage.setItem('gui', JSON.stringify(gui.save()))
+// });
 
 gui.show(true);
 document.addEventListener('keydown', (e) => { if (e.altKey && e.key === 'h') gui.show( gui._hidden ); } );

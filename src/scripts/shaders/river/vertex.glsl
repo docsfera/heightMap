@@ -17,6 +17,7 @@ vUv = uv;
     vec3 newPosition = position + normal * displacement ;
 
     pos = newPosition;
+    //position = vec3(0.0, 0.0, 0.0);
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
 }

@@ -13,19 +13,19 @@ export const sceneHandler = {
 
 let scene;
 
-loader.loadTextures('./textures', [ 'interior.exr' ], async (textures) => {
-    await sceneLoadPromise;
-	// scene.environment = textures[0];
+// loader.loadTextures('./textures', [ 'interior.exr' ], async (textures) => {
+//     await sceneLoadPromise;
+// 	// scene.environment = textures[0];
     
-	const envFolder = gui.addFolder('Environment')
-    envFolder.add(scene, 'environment', textures);
-    envFolder.add(scene, 'environmentIntensity', 0, 10);
-    envFolder.addVector(scene.environmentRotation, 'environmentRotation');
-});
+// 	const envFolder = gui.addFolder('Environment')
+//     envFolder.add(scene, 'environment', textures);
+//     envFolder.add(scene, 'environmentIntensity', 0, 10);
+//     envFolder.addVector(scene.environmentRotation, 'environmentRotation');
+// });
 
 function init(incomingScene) {
     scene = incomingScene;
-    scene.background = new THREE.Color(0xFFFFFF);
+    //scene.background = new THREE.Color(0xFFFFFF);
 
     setUpCameraFromImported("camera", "camera_target");
 

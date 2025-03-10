@@ -14,6 +14,8 @@ import { EffectPass } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
 import { proceduralEnvironmentHandler } from './procedural_envmap.js';
 
+//import { RenderPass, EffectComposer, OutlinePass } from "three-outlinepass"
+
 import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
@@ -46,8 +48,8 @@ window.container3D.canvas = canvas;
 const annRenderer = initCSS2DRenderer(container3D);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xFFFFFF);
-scene.fog = new THREE.Fog(new THREE.Color(0xFFFFFF), 30, 90);
+scene.background = new THREE.Color(0xa0d8ef); // Небесно-голубой
+scene.fog = new THREE.Fog(0xa0d8ef, 0.02);
 const bgFolder = gui.addFolder('Background');
 bgFolder.addColor(scene, 'background').onFinishChange((event) => console.log(event.getHexString()));
 bgFolder.addColor(scene.fog, 'color').onFinishChange((event) => console.log(event.getHexString()));
@@ -68,10 +70,17 @@ scene.activeRenderer = renderer;
 scene.renderer = renderer;
 scene.composer = null;
 
+// composer = new THREE.EffectComposer( renderer );
+
+// var renderPass = new RenderPass( scene, camera );
+// composer.addPass( renderPass );
+
 //scene.fog = new THREE.Fog( 0xcccccc, 1, 1500 );
 
 
 let plane, flatPlane, material, flatMaterial
+
+let positionRenderTarget , positionScene, positionCamera, positionMesh
 
 
 class InstancedFloat16BufferAttribute extends THREE.InstancedBufferAttribute {
@@ -106,7 +115,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		const width = 200;
         const height = 200;
-        const segments = 1024;
+        const segments = 10;
 
         const loader = new THREE.TextureLoader();
         const displacement = loader.load('./3d/map2.jpg');
@@ -120,10 +129,53 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
             //wireframe: true,
             displacementMap: displacement,
             displacementScale: 30,
-            onBeforeCompile: (shader1) => {console.log({shader1})}
+            wireframe: true
         });
 
-       
+  //       displacement.needsUpdate = true;
+		// displacement.onLoad = () => {
+		//     // Получаем данные из displacementMap
+		//     const canvas = document.createElement('canvas');
+		//     const ctx = canvas.getContext('2d');
+		//     canvas.width = displacement.image.width;
+		//     canvas.height = displacement.image.height;
+		//     ctx.drawImage(displacement.image, 0, 0);
+		//     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+		//     // Обновляем позиции вершин
+		//     const positions = geometry.attributes.position.array;
+		    
+		//     for (let i = 0; i < positions.length; i += 3) {
+		//         // Нормализованные UV-координаты
+		//         const u = (positions[i] / width + 0.5);
+		//         const v = (positions[i + 2] / height + 0.5);
+		        
+		//         // Координаты в текстуре
+		//         const x = Math.floor(u * (canvas.width - 1));
+		//         const y = Math.floor(v * (canvas.height - 1));
+		        
+		//         // Получаем значение высоты (R-канал)
+		//         const displacementValue = imageData[(y * canvas.width + x) * 4] / 255;
+		        
+		//         // Обновляем Y-координату
+		//         positions[i + 1] = displacementValue * baseMaterial.displacementScale;
+		//     }
+
+		//     // Обновляем геометрию
+		//     geometry.attributes.position.needsUpdate = true;
+		//     geometry.computeVertexNormals();
+		//     geometry.computeBoundingBox();
+		//     geometry.computeBoundingSphere();
+
+
+		// };
+
+       //console.log({geometry})
+
+
+
+
+		
 
         
 
@@ -158,6 +210,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	        fog: true,
 	    });
 
+
 	   
 
 	    plane = new THREE.Mesh(geometry, baseMaterial);
@@ -169,8 +222,66 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
         plane.position.y = 0.1
         flatPlane.position.y = 2
 
-        // scene.add(plane)
-        // scene.add(flatPlane)
+        //scene.add(plane)
+        //scene.add(flatPlane)
+
+
+
+        /// UPDATE VERTEX HEIGHT ////
+
+        const positionMaterial = new CustomShaderMaterial({
+        	baseMaterial: baseMaterial,
+		    vertexShader: `
+		        varying vec4 vWorldPosition;
+		        void main() {
+		            // Сохраняем мировую позицию вершины
+		            vWorldPosition = modelMatrix * vec4(position, 1.0);
+		            gl_Position = projectionMatrix * viewMatrix * vWorldPosition;
+		        }
+		    `,
+		    fragmentShader: `
+		        varying vec4 vWorldPosition;
+		        void main() {
+		            // Записываем позицию в RGBA-текстуру (нормализованную)
+		            gl_FragColor = vec4(vWorldPosition.xyz / 100.0, 1.0); 
+		        }
+		    `
+		});
+
+		
+
+		positionRenderTarget  = new THREE.WebGLRenderTarget(1024, 1024, {
+		    type: THREE.FloatType,
+		    format: THREE.RGBAFormat
+		});
+
+		
+			//Создаем сцену и камеру для рендера позиций
+		positionScene = new THREE.Scene();
+		positionCamera = new THREE.PerspectiveCamera( 45, 1.2, 1, 1000 )//activeCamera.clone(); // Используем ту же камеру
+		positionMesh = plane.clone(); // Копируем меш
+		positionMesh.material = positionMaterial;
+		positionScene.add(positionMesh);
+
+	
+
+        const pstt = geometry.attributes.position.array;
+
+        console.log({pstt})
+
+        for (let i = 0; i < pstt.length; i += 3) {
+			const geometry = new THREE.BoxGeometry( 1, 1, 1 ); 
+			const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} ); 
+			const cube = new THREE.Mesh( geometry, material ); 
+			//scene.add( cube );
+			cube.position.x = pstt[i]
+			cube.position.z = pstt[i+1]
+			cube.position.y = pstt[i+2]
+		}
+
+
+
+        //scene.add(flatPlane)
 
         ////// GRASSS ///////
 
@@ -241,9 +352,11 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 // 		const grass = new SimpleGrass();
 // grass.addToScene(scene);
+		
+		const grassCount = 200
 
 
-		const grassGeometry = new THREE.PlaneGeometry(50, 50, 150, 150);
+		const grassGeometry = new THREE.PlaneGeometry(50, 50, grassCount, grassCount);
 		const grassMaterial = new THREE.MeshStandardMaterial({
 		  color: new THREE.Color(0.05, 0.2, 0.01),
 		  //wireframe: true
@@ -421,7 +534,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		// }
 
-		const count = 150*150
+		const count = grassCount*grassCount
 
 		console.log({geom})
 
@@ -458,8 +571,15 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			  shader.fragmentShader = shader.fragmentShader.replace(
 			    "#include <color_fragment>",
 			    `
-			    vec3 gradient = mix(vec3(1,0,0), vec3(0,0,1), vUv.x);
-			    diffuseColor = vec4(1.0, 1.0 ,0.0, 1.0);
+			     vec3 baseColor = vec3(0.2, 0.6, 0.3);
+			    vec3 tipColor = vec3(0.4, 0.9, 0.5);
+			    float gradient = smoothstep(0.3, 0.8, vUv.y);
+
+				//vec3 clr = mix(baseColor, tipColor, vUv.x);
+				vec3 clr = mix(baseColor, tipColor, vUv.y);
+				vec3 clr2 = mix(baseColor, tipColor, vUv.x);
+
+			    diffuseColor = vec4(clr , 1.0);
 			    `
 			  );
 
@@ -470,7 +590,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		const grasses = new InstancedMesh2(geom, redoMAterial);
 		//const grasses = new InstancedMesh2(geom, grassShaderMat);
 
-		grasses.addInstances(40000, (obj, index) => {
+		grasses.addInstances(count, (obj, index) => {
 		  // obj.position.x = 10 * (Math.random() * 2 - 1);
 		  // obj.position.z = 10 * (Math.random() * 2 - 1);
 
@@ -556,6 +676,30 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 });
 
 const clock = new THREE.Clock();
+
+const light = new THREE.DirectionalLight(0xfff0dd, 9);
+light.position.set(10, 20, 10);
+light.castShadow = true;
+scene.add(light);
+
+// Заполняющий свет
+scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
+
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 1.2;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const renderer2 = new THREE.WebGLRenderer();
+
+console.log(scene.activeRenderer.render)
+console.log(scene.activeRenderer.render.setRenderTarget)
+console.log(annRenderer.render.setRenderTarget)
+console.log(renderer2.setRenderTarget)
+
+
+
+
+
 function animate() {
 	const deltaTime = clock.getDelta();
 
@@ -574,7 +718,17 @@ function animate() {
 
 	// renderer.render(scene, activeCamera);
 	// composer.render();
+
+
+
+	// scene.activeRenderer.render.setRenderTarget(positionRenderTarget);
+ //    scene.activeRenderer.render.render(positionScene, positionCamera);
+ //    scene.activeRenderer.render.setRenderTarget(null);
+
 	scene.activeRenderer.render(scene, activeCamera)
+
+	// Рендерим позиции в текстуру
+    
 
 	annRenderer.render(scene, activeCamera);
     // скрыть перекрываемые  аннотации при движении (используется raycaster, сильно тормозит приложение)

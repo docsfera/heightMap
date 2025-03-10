@@ -32,7 +32,7 @@ class ProceduralEnvironment extends THREE.Scene {
 		room.scale.setScalar( 10 );
 		this.add( room );
 
-		const mainLight = new THREE.PointLight( 0xFFFFFF, 50, 0, 2 );
+		const mainLight = new THREE.PointLight( 0xFFFFFF, 80, 0, 2 );
 		this.add( mainLight );
         procedualEnvFolder.addColor(mainLight, 'color').onFinishChange((event) => console.log(event.getHexString()));
         procedualEnvFolder.add(mainLight, 'intensity');
