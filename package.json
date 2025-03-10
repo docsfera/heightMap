@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@three.ez/instanced-mesh": "^0.3.0-alpha.10",
     "camera-controls": "^2.8.3",
     "gsap": "^3.12.5",
     "lil-gui": "^0.19.2",
