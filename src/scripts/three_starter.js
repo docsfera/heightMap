@@ -17,6 +17,8 @@ import { proceduralEnvironmentHandler } from './procedural_envmap.js';
 //import { RenderPass, EffectComposer, OutlinePass } from "three-outlinepass"
 
 import { InstancedMesh2 } from '@three.ez/instanced-mesh';
+//import { GPUComputationRenderer } from 'gpucomputationrender-three';
+import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
 
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
@@ -24,6 +26,7 @@ import shaderV from './shaders/river/vertex.glsl'
 import shaderF from './shaders/river/fragment.glsl'
 import waterV from './shaders/water/vertex.glsl'
 import waterF from './shaders/water/fragment.glsl'
+import gpgpuParticlesShader from './shaders/gpgpu/particles.glsl'
 
 const container3D = document.querySelector(".d3d-container");
 const foreground = document.querySelector(".foreground");
@@ -614,8 +617,19 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		console.log(grasses.instanceMatrix.array)
 
-		scene.add(grasses)
-		scene.add(grassMesh);
+		// scene.add(grasses)
+		// scene.add(grassMesh);
+
+
+
+
+
+
+
+
+
+
+
 
 
 		/////////////////////
@@ -698,6 +712,57 @@ console.log(renderer2.setRenderTarget)
 
 
 
+///////// GPGPU ///////////////
+
+		const baseGeometry = {}
+		baseGeometry.instance = new THREE.SphereGeometry(3)
+		baseGeometry.count = baseGeometry.instance.attributes.position.count
+
+		const particles = {}
+		particles.material = new THREE.PointsMaterial( { color: 0x888888 } )
+		particles.points = new THREE.Points(baseGeometry.instance, particles.material)
+		scene.add(particles.points)
+
+		const gpgpu = {}
+		gpgpu.size = Math.ceil(Math.sqrt(baseGeometry.count))
+		console.log(gpgpu.size)
+		gpgpu.computation = new GPUComputationRenderer(gpgpu.size, gpgpu.size, renderer)
+
+		const baseParticlesTexture = gpgpu.computation.createTexture()
+		
+		gpgpu.particlesVariable = gpgpu.computation.addVariable('uParticles', gpgpuParticlesShader, baseParticlesTexture)
+		gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.particlesVariable ])
+		gpgpu.computation.init()
+
+		gpgpu.debug = new THREE.Mesh(
+		    new THREE.PlaneGeometry(3, 3),
+		    new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
+		)
+		gpgpu.debug.position.x = 3
+		scene.add(gpgpu.debug)
+
+
+
+		for(let i = 0; i < baseGeometry.count; i++)
+		{
+		    const i3 = i * 3
+		    const i4 = i * 4
+
+		    // Position based on geometry
+		    baseParticlesTexture.image.data[i4 + 0] = baseGeometry.instance.attributes.position.array[i3 + 0]
+		    baseParticlesTexture.image.data[i4 + 1] = baseGeometry.instance.attributes.position.array[i3 + 1]
+		    baseParticlesTexture.image.data[i4 + 2] = baseGeometry.instance.attributes.position.array[i3 + 2]
+		    baseParticlesTexture.image.data[i4 + 3] = 0
+		}
+
+		
+
+		console.warn(baseParticlesTexture.image.data)
+
+		console.log(gpgpu.computation.createTexture())
+
+
+
 
 
 function animate() {
@@ -724,6 +789,8 @@ function animate() {
 	// scene.activeRenderer.render.setRenderTarget(positionRenderTarget);
  //    scene.activeRenderer.render.render(positionScene, positionCamera);
  //    scene.activeRenderer.render.setRenderTarget(null);
+
+ gpgpu.computation.compute()
 
 	scene.activeRenderer.render(scene, activeCamera)
 
