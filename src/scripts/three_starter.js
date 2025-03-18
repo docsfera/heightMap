@@ -26,6 +26,9 @@ import shaderV from './shaders/river/vertex.glsl'
 import shaderF from './shaders/river/fragment.glsl'
 import waterV from './shaders/water/vertex.glsl'
 import waterF from './shaders/water/fragment.glsl'
+import landF from './shaders/gpgpu/landF.glsl'
+import landV from './shaders/gpgpu/landV.glsl'
+import vv from './shaders/gpgpu/vv.glsl'
 import gpgpuParticlesShader from './shaders/gpgpu/particles.glsl'
 
 const container3D = document.querySelector(".d3d-container");
@@ -730,16 +733,7 @@ console.log(renderer2.setRenderTarget)
 
 		const baseParticlesTexture = gpgpu.computation.createTexture()
 		
-		gpgpu.particlesVariable = gpgpu.computation.addVariable('uParticles', gpgpuParticlesShader, baseParticlesTexture)
-		gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.particlesVariable ])
-		gpgpu.computation.init()
-
-		gpgpu.debug = new THREE.Mesh(
-		    new THREE.PlaneGeometry(3, 3),
-		    new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
-		)
-		gpgpu.debug.position.x = 3
-		scene.add(gpgpu.debug)
+		
 
 
 
@@ -755,11 +749,233 @@ console.log(renderer2.setRenderTarget)
 		    baseParticlesTexture.image.data[i4 + 3] = 0
 		}
 
+		// AFTER FILLING baseParticlesTexture !!!!!!!!
+
+		gpgpu.particlesVariable = gpgpu.computation.addVariable('uParticles', gpgpuParticlesShader, baseParticlesTexture)
+		gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.particlesVariable ])
+		gpgpu.computation.init()
+
+		gpgpu.debug = new THREE.Mesh(
+		    new THREE.PlaneGeometry(3, 3),
+		    new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
+		)
+		gpgpu.debug.position.x = 3
+		scene.add(gpgpu.debug)
+
+
+	////////////////////////////////////
+
+
+	const width1 = 200;
+        const height1 = 200;
+        const segments1 = 10;
+
+        const loader1 = new THREE.TextureLoader();
+        const displacement1 = loader1.load('./3d/map2.jpg');
+
+        const map1 = loader1.load('./3d/tex.png');
+
+        const geometry1 = new THREE.PlaneGeometry(width1, height1, segments1, segments1);
+        const baseMaterial1 = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, //Red
+            //map:map1,
+            //wireframe: true,
+            displacementMap: displacement1,
+            displacementScale: 30,
+            //wireframe: true
+        });
+
+        const uniforms1 = {
+        	uDisplacementMap: { value: displacement1 },
+            uDisplacementScale: { value: 50.0 },
+            uTime: { value: 0.0 },
+        }
+
+        const material1 = new CustomShaderMaterial({
+	        baseMaterial: baseMaterial1,
+	        vertexShader: landV,
+	        fragmentShader: landF,
+	        uniforms: uniforms1,
+	    });
+
+	    const material2 = new THREE.ShaderMaterial({
+	    	vertexShader: landV,
+	        fragmentShader: landF,
+	        uniforms: uniforms1,
+	    })
+
+	    const plane1 = new THREE.Mesh(geometry1, material2);
+        plane1.rotation.x = -Math.PI / 2
+
+        plane1.position.y = 0.1
+
+        scene.add(plane1)
+
+        console.log(plane1)
+
+
+        const gpgpu1 = {}
+		gpgpu1.size = Math.ceil(Math.sqrt(geometry1.attributes.position.count))
+		console.log({sssss: gpgpu1.size})
+		gpgpu1.computation = new GPUComputationRenderer(gpgpu1.size, gpgpu1.size, renderer)
+
+		const myFilter2 = gpgpu1.computation.createShaderMaterial( landF, { theTexture: { value: null } } );
+
+
 		
 
-		console.warn(baseParticlesTexture.image.data)
+		gpgpu1.computation.init()
 
-		console.log(gpgpu.computation.createTexture())
+// 		console.log({inputTexture})
+
+
+
+
+
+///////////////
+
+
+
+
+// Параметры:
+const width2 = 1024;
+const height2 = 1024;
+const options = {
+	type: THREE.FloatType
+  // format: THREE.RGBAFormat,    // Формат данных
+  // type: THREE.FloatType,       // Тип данных (для HDR)
+  // minFilter: THREE.LinearFilter,
+  // magFilter: THREE.LinearFilter,
+  // stencilBuffer: false
+};
+
+// Создаем отдельную сцену и камеру для рендера в текстуру
+const textureScene = new THREE.Scene();
+const wh = 210
+const textureCamera = new THREE.OrthographicCamera( wh / - 2, wh / 2, wh / 2, wh / - 2, 1, 1000 );
+
+// Добавляем объекты в textureScene
+const box = new THREE.Mesh(
+  new THREE.BoxGeometry(),
+  new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
+);
+//textureScene.add(box);
+
+const mp =plane1.clone()
+mp.rotation.z = -Math.PI / 2
+//plane1.rotation.y = -Math.PI / 2
+//textureScene.add(box);
+textureScene.add(mp);
+
+// Позиционируем камеру
+textureCamera.position.y = 1000;
+textureCamera.lookAt(0,0,0)
+
+const renderTarget = new THREE.WebGLRenderTarget(width2, height2, options);
+
+
+// Создаем материал с полученной текстурой
+const planeMaterial = new THREE.MeshBasicMaterial({
+  map: renderTarget.texture
+});
+
+// Применяем к объекту в основной сцене
+const plane11 = new THREE.Mesh(
+  new THREE.PlaneGeometry(5, 5),
+  planeMaterial
+);
+plane11.position.z = -0.1
+scene.add(plane11);
+
+
+
+
+console.log({tex: renderTarget.texture})
+
+
+//// Use the GPGPU to position particles 
+// Geometry
+const particlesUvArray = new Float32Array(plane1.geometry.attributes.position.count * 2)
+
+particles.geometry = new THREE.BufferGeometry()
+particles.material = new THREE.ShaderMaterial({
+    vertexShader: `
+    	void main(){
+    		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    	}
+
+    `,
+    fragmentShader: `
+    	void main(){
+    		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    	}
+
+    `,
+    uniforms:
+    {
+        // ...
+        uParticlesTexture: new THREE.Uniform()
+    }
+})
+
+
+const mySize = Math.ceil(Math.sqrt(plane1.geometry.attributes.position.count))
+
+for(let y = 0; y < mySize; y++)
+{
+    for(let x = 0; x < mySize; x++)
+    {
+        const i = (y * mySize + x)
+        const i2 = i * 2
+
+        // Particles UV
+        const uvX = (x + 0.5) / mySize
+        const uvY = (y + 0.5) / mySize
+
+        particlesUvArray[i2 + 0] = uvX;
+        particlesUvArray[i2 + 1] = uvY;
+    }
+}
+
+particles.geometry.setDrawRange(0, plane1.geometry.attributes.position.count)
+particles.geometry.setAttribute('aParticlesUv', new THREE.BufferAttribute(particlesUvArray, 2))
+
+
+console.log({g: particles.geometry})
+
+// ...
+
+// Points
+particles.points = new THREE.Points(particles.geometry, particles.material)
+scene.add(particles.points)
+
+//scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), particles.material))
+
+
+
+const pixels = new Float32Array(1024 * 1024 * 4);
+setTimeout(() => {
+
+    renderer.readRenderTargetPixels(
+        renderTarget,
+        0, 0, 1024, 1024,
+        pixels
+    );
+
+    // Конвертируем обратно в мировые координаты
+    const vertexPositions = [];
+    for (let i = 0; i < pixels.length; i += 4) {
+        const x = pixels[i] * 100.0;
+        const y = pixels[i + 1] * 100.0;
+        const z = pixels[i + 2] * 100.0;
+        if (x !== 0 || y !== 0 || z !== 0) { // Фильтруем пустые пиксели
+            vertexPositions.push(new THREE.Vector3(x, y, z));
+        }
+    }
+
+    console.log('Позиции вершин:', vertexPositions);
+}, 1000);
+
 
 
 
@@ -791,8 +1007,18 @@ function animate() {
  //    scene.activeRenderer.render.setRenderTarget(null);
 
  gpgpu.computation.compute()
+ //gpgpu1.computation.compute()
+ //particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture
 
-	scene.activeRenderer.render(scene, activeCamera)
+	//scene.activeRenderer.render(scene, activeCamera)
+	renderer.setRenderTarget(renderTarget);
+	renderer.render(textureScene, textureCamera)
+	particles.material.uniforms.uParticlesTexture.value = renderTarget.texture
+
+	
+
+	renderer.setRenderTarget(null);
+	renderer.render(scene, activeCamera)
 
 	// Рендерим позиции в текстуру
     
