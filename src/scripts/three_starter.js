@@ -121,7 +121,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		const width = 200;
         const height = 200;
-        const segments = 10;
+        const segments = 400;
 
         const loader = new THREE.TextureLoader();
         const displacement = loader.load('./3d/map2.jpg');
@@ -135,7 +135,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
             //wireframe: true,
             displacementMap: displacement,
             displacementScale: 30,
-            wireframe: true
+            //wireframe: true
         });
 
   //       displacement.needsUpdate = true;
@@ -228,7 +228,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
         plane.position.y = 0.1
         flatPlane.position.y = 2
 
-        //scene.add(plane)
+        scene.add(plane)
         //scene.add(flatPlane)
 
 
@@ -287,85 +287,413 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 
 
-        //scene.add(flatPlane)
+        scene.add(flatPlane)
 
-        ////// GRASSS ///////
+       
 
-//         const GRASS_WIDTH = 0.1;
-// 		const GRASS_HEIGHT = 1.5;
-// 		const GRASS_SEGMENTS = 6;
-// 		const GRASS_PATCH_SIZE = 10;
-// 		const NUM_GRASS = 1000;
 
-// 		class SimpleGrass {
-// 		  constructor() {
-// 		    this.group = new THREE.Group();
-// 		    this.geometry = this.createGrassGeometry();
-// 		    //this.material = new shaders.GameMaterial('GRASS');
-// 		    this.material = new THREE.MeshStandardMaterial({color: "#ff0000", wireframe: true});
-// 		    this.mesh = new THREE.Mesh(this.geometry, this.material);
-// 		    this.mesh.name = "grass"
-		    
-// 		    this.configureMaterial();
-// 		    this.group.add(this.mesh);
-// 		  }
 
-// 		  createGrassGeometry() {
-// 		    const geometry = new THREE.InstancedBufferGeometry();
-// 		    const offsets = [];
 
-// 		    // Генерация случайных позиций
-// 		    for (let i = 0; i < NUM_GRASS; i++) {
-// 		      offsets.push(
-// 		        // math.rand_range(-GRASS_PATCH_SIZE, GRASS_PATCH_SIZE),
-// 		        // math.rand_range(-GRASS_PATCH_SIZE, GRASS_PATCH_SIZE),
-// 		        // 0
-// 		       (Math.random() * GRASS_PATCH_SIZE * 2 - GRASS_PATCH_SIZE ),
-// 		       (Math.random() * GRASS_PATCH_SIZE * 2 - GRASS_PATCH_SIZE ),
-//                 0
-// 		      );
-// 		    }
 
-// 		    // Настройка атрибутов
-// 		    geometry.setAttribute(
-// 		      'position',
-// 		      new THREE.InstancedBufferAttribute(new Float32Array(offsets), 3)
-// 		    );
 
-// 		    // Простая геометрия стебля травы
-// 		    const vertices = new Float32Array([
-// 		      0, 0, 0,
-// 		      GRASS_WIDTH, 0, 0,
-// 		      0, GRASS_HEIGHT, 0
-// 		    ]);
 
-// 		    geometry.setAttribute('vertPosition', new THREE.BufferAttribute(vertices, 3));
-// 		    geometry.setIndex([0, 1, 2]);
 
-// 		    return geometry;
-// 		  }
 
-// 		  configureMaterial() {
-// 		    // this.material.setVec2('grassSize', new THREE.Vector2(GRASS_WIDTH, GRASS_HEIGHT));
-// 		    // this.material.alphaTest = 0.5;
-// 		    this.material.side = THREE.DoubleSide;
-// 		  }
 
-// 		  addToScene(scene) {
-// 		    scene.add(this.group);
-// 		  }
-// 		}
 
-// 		const grass = new SimpleGrass();
-// grass.addToScene(scene);
+
+
+		/////////////////////
+
+		scene.getObjectByName("suzanne").visible = false
+		scene.getObjectByName("curve").visible = false
+		scene.getObjectByName("cube").visible = false
+		scene.getObjectByName("sphere").visible = false
+		scene.getObjectByName("slim_cube").visible = false
+		scene.getObjectByName("floor").visible = false
+
+
+		/////////////////////
+
 		
-		const grassCount = 200
+		//Init block
+		proceduralEnvironmentHandler.init(scene, renderer);
+		animations.initHandler(scene);
+		activeCamera = new Camera.Perspective(canvas);
+		initRaycaster(scene, activeCamera);
+		clippingPlanes.init(scene);
+		
+		onResize(renderer, activeCamera, container3D);
+		onResize(annRenderer, activeCamera, container3D);
+
+		window.addEventListener("resize", () => onResize(scene.activeRenderer, activeCamera, container3D));
+		window.addEventListener("resize", () => onResize(annRenderer, activeCamera, container3D));
+		
+		composer = new EffectComposer( renderer, {multisampling: 8, stencilBuffer: true} );
+		renderPass = new RenderPass( scene, activeCamera )
+		n8aopass = new N8AOPostPass(
+			scene,
+			activeCamera,
+			container3D.offsetWidth, 
+			container3D.offsetHeight
+		);
+		const aoFolder = gui.addFolder('AO');
+		n8aopass.configuration.aoRadius = 2.0; 						aoFolder.add(n8aopass.configuration, 'aoRadius');
+		n8aopass.configuration.distanceFalloff = 1.0; 				aoFolder.add(n8aopass.configuration, 'distanceFalloff');
+		n8aopass.configuration.intensity = 4.0; 					aoFolder.add(n8aopass.configuration, 'intensity');
+		n8aopass.configuration.halfRes = false; 					aoFolder.add(n8aopass.configuration, 'halfRes');
+		n8aopass.configuration.accumulate = false; 					aoFolder.add(n8aopass.configuration, 'accumulate');
+		n8aopass.configuration.color = new THREE.Color(0x000000); 	aoFolder.addColor(n8aopass.configuration, 'color').onFinishChange((event) => console.log(event.getHexString()));
+		n8aopass.setQualityMode("Low"); 
+	
+		composer.addPass(renderPass);
+		composer.addPass(n8aopass);
+		scene.composer = composer;
+		gui.add(scene, 'activeRenderer', {renderer: scene.renderer, composer: scene.composer});
+		
+		sceneHandler.init(scene);
+		
+		resolve();
+		
+		animate();
+		animations.fadeIn();
+	});
+});
+
+const clock = new THREE.Clock();
+
+const light = new THREE.DirectionalLight(0xfff0dd, 9);
+light.position.set(10, 20, 10);
+light.castShadow = true;
+scene.add(light);
+
+// Заполняющий свет
+scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
+
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 1.2;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const renderer2 = new THREE.WebGLRenderer();
+
+console.log(scene.activeRenderer.render)
+console.log(scene.activeRenderer.render.setRenderTarget)
+console.log(annRenderer.render.setRenderTarget)
+console.log(renderer2.setRenderTarget)
 
 
-		const grassGeometry = new THREE.PlaneGeometry(50, 50, grassCount, grassCount);
+
+///////// GPGPU ///////////////
+
+		// const baseGeometry = {}
+		// baseGeometry.instance = new THREE.SphereGeometry(3)
+		// baseGeometry.count = baseGeometry.instance.attributes.position.count
+
+		// const particles = {}
+		// particles.material = new THREE.PointsMaterial( { color: 0x888888 } )
+		// particles.points = new THREE.Points(baseGeometry.instance, particles.material)
+		// scene.add(particles.points)
+
+		// const gpgpu = {}
+		// gpgpu.size = Math.ceil(Math.sqrt(baseGeometry.count))
+		// console.log(gpgpu.size)
+		// gpgpu.computation = new GPUComputationRenderer(gpgpu.size, gpgpu.size, renderer)
+
+		// const baseParticlesTexture = gpgpu.computation.createTexture()
+		
+		
+
+
+
+		// for(let i = 0; i < baseGeometry.count; i++)
+		// {
+		//     const i3 = i * 3
+		//     const i4 = i * 4
+
+		//     // Position based on geometry
+		//     baseParticlesTexture.image.data[i4 + 0] = baseGeometry.instance.attributes.position.array[i3 + 0]
+		//     baseParticlesTexture.image.data[i4 + 1] = baseGeometry.instance.attributes.position.array[i3 + 1]
+		//     baseParticlesTexture.image.data[i4 + 2] = baseGeometry.instance.attributes.position.array[i3 + 2]
+		//     baseParticlesTexture.image.data[i4 + 3] = 0
+		// }
+
+		// // AFTER FILLING baseParticlesTexture !!!!!!!!
+
+		// gpgpu.particlesVariable = gpgpu.computation.addVariable('uParticles', gpgpuParticlesShader, baseParticlesTexture)
+		// gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.particlesVariable ])
+		// gpgpu.computation.init()
+
+		// gpgpu.debug = new THREE.Mesh(
+		//     new THREE.PlaneGeometry(3, 3),
+		//     new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
+		// )
+		// gpgpu.debug.position.x = 3
+		// scene.add(gpgpu.debug)
+
+
+	////////////////////////////////////
+
+
+	const width1 = 200;
+        const height1 = 200;
+        const segments1 = 10;
+
+        const loader1 = new THREE.TextureLoader();
+        const displacement1 = loader1.load('./3d/map2.jpg');
+
+        const map1 = loader1.load('./3d/tex.png');
+
+        const geometry1 = new THREE.PlaneGeometry(width1, height1, segments1, segments1);
+        const baseMaterial1 = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, //Red
+            //map:map1,
+            //wireframe: true,
+            displacementMap: displacement1,
+            displacementScale: 30,
+            //wireframe: true
+        });
+
+        const uniforms1 = {
+        	uDisplacementMap: { value: displacement1 },
+            uDisplacementScale: { value: 50.0 },
+            uTime: { value: 0.0 },
+        }
+
+        const material1 = new CustomShaderMaterial({
+	        baseMaterial: baseMaterial1,
+	        vertexShader: landV,
+	        fragmentShader: landF,
+	        uniforms: uniforms1,
+	    });
+
+	    const material2 = new THREE.ShaderMaterial({
+	    	vertexShader: landV,
+	        fragmentShader: landF,
+	        uniforms: uniforms1,
+	    })
+
+	    const plane1 = new THREE.Mesh(geometry1, material2);
+        plane1.rotation.x = -Math.PI / 2
+
+        plane1.position.y = 0.1
+
+        //scene.add(plane1) // plane with fragcolor
+
+        //console.log(plane1)
+
+
+  //       const gpgpu1 = {}
+		// gpgpu1.size = Math.ceil(Math.sqrt(geometry1.attributes.position.count))
+		// console.log({sssss: gpgpu1.size})
+		// gpgpu1.computation = new GPUComputationRenderer(gpgpu1.size, gpgpu1.size, renderer)
+
+		// const myFilter2 = gpgpu1.computation.createShaderMaterial( landF, { theTexture: { value: null } } );
+
+
+		
+
+		// gpgpu1.computation.init()
+
+// 		console.log({inputTexture})
+
+
+
+
+
+///////////////
+
+
+
+
+// Параметры:
+const tt = 700
+const width2 = tt;
+const height2 = tt;
+const options = {
+	type: THREE.FloatType
+  // format: THREE.RGBAFormat,    // Формат данных
+  // type: THREE.FloatType,       // Тип данных (для HDR)
+  // minFilter: THREE.LinearFilter,
+  // magFilter: THREE.LinearFilter,
+  // stencilBuffer: false
+};
+
+// Создаем отдельную сцену и камеру для рендера в текстуру
+const textureScene = new THREE.Scene();
+const wh = 205
+const textureCamera = new THREE.OrthographicCamera( wh / - 2, wh / 2, wh / 2, wh / - 2, 1, 1000 );
+
+const mp =plane1.clone()
+mp.rotation.z = -Math.PI / 2
+//plane1.rotation.y = -Math.PI / 2
+//textureScene.add(box);
+textureScene.add(mp);
+
+// Позиционируем камеру
+textureCamera.position.y = 100;
+textureCamera.lookAt(0,0,0)
+
+const renderTarget = new THREE.WebGLRenderTarget(width2, height2, options);
+
+
+// Создаем материал с полученной текстурой
+const planeMaterial = new THREE.MeshBasicMaterial({
+  map: renderTarget.texture
+});
+
+// Применяем к объекту в основной сцене
+const plane11 = new THREE.Mesh(
+  new THREE.PlaneGeometry(5, 5),
+  planeMaterial
+);
+plane11.position.z = -0.1
+scene.add(plane11); // renderTarget Plnae
+
+
+
+
+console.log({tex: renderTarget.texture})
+
+
+//// Use the GPGPU to position particles 
+// Geometry
+// const particlesUvArray = new Float32Array(plane1.geometry.attributes.position.count * 2)
+
+// particles.geometry = new THREE.BufferGeometry()
+// particles.material = new THREE.ShaderMaterial({
+//     vertexShader: `
+//     	void main(){
+//     		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+//     	}
+
+//     `,
+//     fragmentShader: `
+//     	void main(){
+//     		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+//     	}
+
+//     `,
+//     uniforms:
+//     {
+//         // ...
+//         uParticlesTexture: new THREE.Uniform()
+//     }
+// })
+
+
+// const mySize = Math.ceil(Math.sqrt(plane1.geometry.attributes.position.count))
+
+// for(let y = 0; y < mySize; y++)
+// {
+//     for(let x = 0; x < mySize; x++)
+//     {
+//         const i = (y * mySize + x)
+//         const i2 = i * 2
+
+//         // Particles UV
+//         const uvX = (x + 0.5) / mySize
+//         const uvY = (y + 0.5) / mySize
+
+//         particlesUvArray[i2 + 0] = uvX;
+//         particlesUvArray[i2 + 1] = uvY;
+//     }
+// }
+
+// particles.geometry.setDrawRange(0, plane1.geometry.attributes.position.count)
+// particles.geometry.setAttribute('aParticlesUv', new THREE.BufferAttribute(particlesUvArray, 2))
+// // Points
+// particles.points = new THREE.Points(particles.geometry, particles.material)
+// scene.add(particles.points)
+
+
+
+const pixels = new Float32Array(tt * tt * 4);
+setTimeout(() => {
+
+    renderer.readRenderTargetPixels(
+        renderTarget,
+        0, 0, tt, tt,
+        pixels
+    );
+    const indicesArr = [] 
+
+    // Конвертируем обратно в мировые координаты
+    const vertexPositions = [];
+    const verticesArr = [];
+    let j = 0
+    for (let i = 0; i < pixels.length; i += 4) {
+        const x = pixels[i];
+        const y = pixels[i + 1] ;
+        const z = pixels[i + 2]  * 0.75;
+        if (x !== 0 || y !== 0 || z !== 0) { // Фильтруем пустые пиксели
+            vertexPositions.push(new THREE.Vector3(x, y, z));
+            indicesArr.push(j, j+1, j+2)
+            verticesArr.push(x, y, z)
+            j+=3
+        }
+    }
+
+    console.log('Позиции вершин:', vertexPositions);
+
+    const vertices2 = new Float32Array(verticesArr);
+ //    const indices = new Uint16Array(indicesArr);
+	
+
+ //    const geom4 = new THREE.BufferGeometry();
+	// geom4.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+	// geom4.setIndex(new THREE.BufferAttribute(indices, 1));
+
+	const material4 = new THREE.MeshBasicMaterial({ 
+	    color: 0x0000ff,
+	    wireframe: true, // Для визуализации треугольников
+	    side: THREE.DoubleSide
+	});
+
+
+	const indicesArr2 = [];
+
+		for (let y = tt - 2; y >= 0; y--) {
+  for (let x = tt - 2; x >= 0; x--) {
+    // Вычисляем индексы вершин для текущего квада
+    const a = (y + 1) * tt + x + 1;  // Право-низ
+    const b = (y + 1) * tt + x;      // Лево-низ
+    const c = y * tt + x + 1;        // Право-верх
+    const d = y * tt + x;            // Лево-верх
+
+    // Первый треугольник (правый нижний треугольник квада)
+    indicesArr2.push(a, b, c);
+    
+    // Второй треугольник (левый верхний треугольник квада)
+    indicesArr2.push(c, b, d);
+  }
+}
+	const indices2 = new Uint16Array(indicesArr2);
+
+	const geom5 = new THREE.BufferGeometry();
+	geom5.setAttribute('position', new THREE.BufferAttribute(vertices2, 3));
+	geom5.setIndex(new THREE.BufferAttribute(indices2, 1));
+
+	// 6. Создаем меш и добавляем на сцену
+	const mesh = new THREE.Mesh(geom5, material4);
+	// const mesh = new THREE.Points(geom4, new THREE.PointsMaterial({
+	//     color: 0xff0000,     
+	//     size: 2,          
+	//     transparent: true,    
+	//     alphaTest: 0.5        
+	// }));
+
+	//scene.add(mesh);
+
+	 ////// GRASSS ///////
+		
+		const grassCount = 900//200
+
+
+		const grassGeometry = geom5
+		//const grassGeometry = new THREE.PlaneGeometry(50, 50, grassCount, grassCount);
 		const grassMaterial = new THREE.MeshStandardMaterial({
 		  color: new THREE.Color(0.05, 0.2, 0.01),
-		  //wireframe: true
+		  wireframe: true
 		})
 
 		const grassMesh = new THREE.Mesh(grassGeometry, grassMaterial);
@@ -381,13 +709,11 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		const worldPosition = new THREE.Vector3();
 
 
-		const testPos = []
+		/*const testPos = []
 
 		for (let i = 0; i < positions.length; i += 3) {
 			testPos.push(new THREE.Vector3(positions[i], positions[i+1], positions[i+2]))
-		}
-
-		console.log({testPos})
+		}*/
 
 
 
@@ -596,13 +922,32 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		const grasses = new InstancedMesh2(geom, redoMAterial);
 		//const grasses = new InstancedMesh2(geom, grassShaderMat);
 
+
+		const testPos = []
+
+		const positionsss = geom5.attributes.position.array
+
+		
+
+		for (let i = 0; i < positionsss.length; i += 3) {
+			testPos.push(new THREE.Vector3(positionsss[i], positionsss[i+1], positionsss[i+2]))
+		}
+
 		grasses.addInstances(count, (obj, index) => {
 		  // obj.position.x = 10 * (Math.random() * 2 - 1);
 		  // obj.position.z = 10 * (Math.random() * 2 - 1);
 
-		  const ps = testPos[Math.round(Math.random() * count)]
-		  obj.position.x = ps.x + Math.random() * 0.8
-		  obj.position.z = ps.y + Math.random() * 0.8
+		  const r = Math.round(Math.random() * count)
+
+		  //console.log({r})
+
+		  const ps = testPos[r]
+
+		  //console.log({ps})
+		  if(ps && ps.z > 3){
+		  	obj.position.x = ps.x + Math.random() * 0.8 * 6
+		  obj.position.z = ps.y + Math.random() * 0.8 * 6
+		  obj.position.y = ps.z
 
 		  //obj.rotateY = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
 
@@ -613,6 +958,8 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		  //console.log(obj)
 		  obj.updateMatrix();
 		  grasses.setMatrixAt(index, obj.matrix)
+		  }
+		  
 		});
 
 		grasses.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
@@ -620,360 +967,14 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		console.log(grasses.instanceMatrix.array)
 
-		// scene.add(grasses)
-		// scene.add(grassMesh);
+		scene.add(grasses)
+		//scene.add(grassMesh);
+		grasses.scale.z = -1
 
+		gui.add(grasses.scale, 'z').max(1).min(-1).step(0.1)
 
 
 
-
-
-
-
-
-
-
-
-
-		/////////////////////
-
-		scene.getObjectByName("suzanne").visible = false
-		scene.getObjectByName("curve").visible = false
-		scene.getObjectByName("cube").visible = false
-		scene.getObjectByName("sphere").visible = false
-		scene.getObjectByName("slim_cube").visible = false
-		scene.getObjectByName("floor").visible = false
-
-
-		/////////////////////
-
-		
-		//Init block
-		proceduralEnvironmentHandler.init(scene, renderer);
-		animations.initHandler(scene);
-		activeCamera = new Camera.Perspective(canvas);
-		initRaycaster(scene, activeCamera);
-		clippingPlanes.init(scene);
-		
-		onResize(renderer, activeCamera, container3D);
-		onResize(annRenderer, activeCamera, container3D);
-
-		window.addEventListener("resize", () => onResize(scene.activeRenderer, activeCamera, container3D));
-		window.addEventListener("resize", () => onResize(annRenderer, activeCamera, container3D));
-		
-		composer = new EffectComposer( renderer, {multisampling: 8, stencilBuffer: true} );
-		renderPass = new RenderPass( scene, activeCamera )
-		n8aopass = new N8AOPostPass(
-			scene,
-			activeCamera,
-			container3D.offsetWidth, 
-			container3D.offsetHeight
-		);
-		const aoFolder = gui.addFolder('AO');
-		n8aopass.configuration.aoRadius = 2.0; 						aoFolder.add(n8aopass.configuration, 'aoRadius');
-		n8aopass.configuration.distanceFalloff = 1.0; 				aoFolder.add(n8aopass.configuration, 'distanceFalloff');
-		n8aopass.configuration.intensity = 4.0; 					aoFolder.add(n8aopass.configuration, 'intensity');
-		n8aopass.configuration.halfRes = false; 					aoFolder.add(n8aopass.configuration, 'halfRes');
-		n8aopass.configuration.accumulate = false; 					aoFolder.add(n8aopass.configuration, 'accumulate');
-		n8aopass.configuration.color = new THREE.Color(0x000000); 	aoFolder.addColor(n8aopass.configuration, 'color').onFinishChange((event) => console.log(event.getHexString()));
-		n8aopass.setQualityMode("Low"); 
-	
-		composer.addPass(renderPass);
-		composer.addPass(n8aopass);
-		scene.composer = composer;
-		gui.add(scene, 'activeRenderer', {renderer: scene.renderer, composer: scene.composer});
-		
-		sceneHandler.init(scene);
-		
-		resolve();
-		
-		animate();
-		animations.fadeIn();
-	});
-});
-
-const clock = new THREE.Clock();
-
-const light = new THREE.DirectionalLight(0xfff0dd, 9);
-light.position.set(10, 20, 10);
-light.castShadow = true;
-scene.add(light);
-
-// Заполняющий свет
-scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
-
-renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.2;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-const renderer2 = new THREE.WebGLRenderer();
-
-console.log(scene.activeRenderer.render)
-console.log(scene.activeRenderer.render.setRenderTarget)
-console.log(annRenderer.render.setRenderTarget)
-console.log(renderer2.setRenderTarget)
-
-
-
-///////// GPGPU ///////////////
-
-		const baseGeometry = {}
-		baseGeometry.instance = new THREE.SphereGeometry(3)
-		baseGeometry.count = baseGeometry.instance.attributes.position.count
-
-		const particles = {}
-		particles.material = new THREE.PointsMaterial( { color: 0x888888 } )
-		particles.points = new THREE.Points(baseGeometry.instance, particles.material)
-		scene.add(particles.points)
-
-		const gpgpu = {}
-		gpgpu.size = Math.ceil(Math.sqrt(baseGeometry.count))
-		console.log(gpgpu.size)
-		gpgpu.computation = new GPUComputationRenderer(gpgpu.size, gpgpu.size, renderer)
-
-		const baseParticlesTexture = gpgpu.computation.createTexture()
-		
-		
-
-
-
-		for(let i = 0; i < baseGeometry.count; i++)
-		{
-		    const i3 = i * 3
-		    const i4 = i * 4
-
-		    // Position based on geometry
-		    baseParticlesTexture.image.data[i4 + 0] = baseGeometry.instance.attributes.position.array[i3 + 0]
-		    baseParticlesTexture.image.data[i4 + 1] = baseGeometry.instance.attributes.position.array[i3 + 1]
-		    baseParticlesTexture.image.data[i4 + 2] = baseGeometry.instance.attributes.position.array[i3 + 2]
-		    baseParticlesTexture.image.data[i4 + 3] = 0
-		}
-
-		// AFTER FILLING baseParticlesTexture !!!!!!!!
-
-		gpgpu.particlesVariable = gpgpu.computation.addVariable('uParticles', gpgpuParticlesShader, baseParticlesTexture)
-		gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.particlesVariable ])
-		gpgpu.computation.init()
-
-		gpgpu.debug = new THREE.Mesh(
-		    new THREE.PlaneGeometry(3, 3),
-		    new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
-		)
-		gpgpu.debug.position.x = 3
-		scene.add(gpgpu.debug)
-
-
-	////////////////////////////////////
-
-
-	const width1 = 200;
-        const height1 = 200;
-        const segments1 = 10;
-
-        const loader1 = new THREE.TextureLoader();
-        const displacement1 = loader1.load('./3d/map2.jpg');
-
-        const map1 = loader1.load('./3d/tex.png');
-
-        const geometry1 = new THREE.PlaneGeometry(width1, height1, segments1, segments1);
-        const baseMaterial1 = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff, //Red
-            //map:map1,
-            //wireframe: true,
-            displacementMap: displacement1,
-            displacementScale: 30,
-            //wireframe: true
-        });
-
-        const uniforms1 = {
-        	uDisplacementMap: { value: displacement1 },
-            uDisplacementScale: { value: 50.0 },
-            uTime: { value: 0.0 },
-        }
-
-        const material1 = new CustomShaderMaterial({
-	        baseMaterial: baseMaterial1,
-	        vertexShader: landV,
-	        fragmentShader: landF,
-	        uniforms: uniforms1,
-	    });
-
-	    const material2 = new THREE.ShaderMaterial({
-	    	vertexShader: landV,
-	        fragmentShader: landF,
-	        uniforms: uniforms1,
-	    })
-
-	    const plane1 = new THREE.Mesh(geometry1, material2);
-        plane1.rotation.x = -Math.PI / 2
-
-        plane1.position.y = 0.1
-
-        scene.add(plane1)
-
-        console.log(plane1)
-
-
-        const gpgpu1 = {}
-		gpgpu1.size = Math.ceil(Math.sqrt(geometry1.attributes.position.count))
-		console.log({sssss: gpgpu1.size})
-		gpgpu1.computation = new GPUComputationRenderer(gpgpu1.size, gpgpu1.size, renderer)
-
-		const myFilter2 = gpgpu1.computation.createShaderMaterial( landF, { theTexture: { value: null } } );
-
-
-		
-
-		gpgpu1.computation.init()
-
-// 		console.log({inputTexture})
-
-
-
-
-
-///////////////
-
-
-
-
-// Параметры:
-const width2 = 1024;
-const height2 = 1024;
-const options = {
-	type: THREE.FloatType
-  // format: THREE.RGBAFormat,    // Формат данных
-  // type: THREE.FloatType,       // Тип данных (для HDR)
-  // minFilter: THREE.LinearFilter,
-  // magFilter: THREE.LinearFilter,
-  // stencilBuffer: false
-};
-
-// Создаем отдельную сцену и камеру для рендера в текстуру
-const textureScene = new THREE.Scene();
-const wh = 210
-const textureCamera = new THREE.OrthographicCamera( wh / - 2, wh / 2, wh / 2, wh / - 2, 1, 1000 );
-
-// Добавляем объекты в textureScene
-const box = new THREE.Mesh(
-  new THREE.BoxGeometry(),
-  new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
-);
-//textureScene.add(box);
-
-const mp =plane1.clone()
-mp.rotation.z = -Math.PI / 2
-//plane1.rotation.y = -Math.PI / 2
-//textureScene.add(box);
-textureScene.add(mp);
-
-// Позиционируем камеру
-textureCamera.position.y = 1000;
-textureCamera.lookAt(0,0,0)
-
-const renderTarget = new THREE.WebGLRenderTarget(width2, height2, options);
-
-
-// Создаем материал с полученной текстурой
-const planeMaterial = new THREE.MeshBasicMaterial({
-  map: renderTarget.texture
-});
-
-// Применяем к объекту в основной сцене
-const plane11 = new THREE.Mesh(
-  new THREE.PlaneGeometry(5, 5),
-  planeMaterial
-);
-plane11.position.z = -0.1
-scene.add(plane11);
-
-
-
-
-console.log({tex: renderTarget.texture})
-
-
-//// Use the GPGPU to position particles 
-// Geometry
-const particlesUvArray = new Float32Array(plane1.geometry.attributes.position.count * 2)
-
-particles.geometry = new THREE.BufferGeometry()
-particles.material = new THREE.ShaderMaterial({
-    vertexShader: `
-    	void main(){
-    		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    	}
-
-    `,
-    fragmentShader: `
-    	void main(){
-    		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    	}
-
-    `,
-    uniforms:
-    {
-        // ...
-        uParticlesTexture: new THREE.Uniform()
-    }
-})
-
-
-const mySize = Math.ceil(Math.sqrt(plane1.geometry.attributes.position.count))
-
-for(let y = 0; y < mySize; y++)
-{
-    for(let x = 0; x < mySize; x++)
-    {
-        const i = (y * mySize + x)
-        const i2 = i * 2
-
-        // Particles UV
-        const uvX = (x + 0.5) / mySize
-        const uvY = (y + 0.5) / mySize
-
-        particlesUvArray[i2 + 0] = uvX;
-        particlesUvArray[i2 + 1] = uvY;
-    }
-}
-
-particles.geometry.setDrawRange(0, plane1.geometry.attributes.position.count)
-particles.geometry.setAttribute('aParticlesUv', new THREE.BufferAttribute(particlesUvArray, 2))
-
-
-console.log({g: particles.geometry})
-
-// ...
-
-// Points
-particles.points = new THREE.Points(particles.geometry, particles.material)
-scene.add(particles.points)
-
-//scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), particles.material))
-
-
-
-const pixels = new Float32Array(1024 * 1024 * 4);
-setTimeout(() => {
-
-    renderer.readRenderTargetPixels(
-        renderTarget,
-        0, 0, 1024, 1024,
-        pixels
-    );
-
-    // Конвертируем обратно в мировые координаты
-    const vertexPositions = [];
-    for (let i = 0; i < pixels.length; i += 4) {
-        const x = pixels[i] * 100.0;
-        const y = pixels[i + 1] * 100.0;
-        const z = pixels[i + 2] * 100.0;
-        if (x !== 0 || y !== 0 || z !== 0) { // Фильтруем пустые пиксели
-            vertexPositions.push(new THREE.Vector3(x, y, z));
-        }
-    }
-
-    console.log('Позиции вершин:', vertexPositions);
 }, 1000);
 
 
@@ -1006,14 +1007,14 @@ function animate() {
  //    scene.activeRenderer.render.render(positionScene, positionCamera);
  //    scene.activeRenderer.render.setRenderTarget(null);
 
- gpgpu.computation.compute()
+ //gpgpu.computation.compute()
  //gpgpu1.computation.compute()
  //particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture
 
 	//scene.activeRenderer.render(scene, activeCamera)
 	renderer.setRenderTarget(renderTarget);
 	renderer.render(textureScene, textureCamera)
-	particles.material.uniforms.uParticlesTexture.value = renderTarget.texture
+	//particles.material.uniforms.uParticlesTexture.value = renderTarget.texture
 
 	
 
