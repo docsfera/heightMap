@@ -14,6 +14,8 @@ import { EffectPass } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
 import { proceduralEnvironmentHandler } from './procedural_envmap.js';
 
+import Stats from 'stats-js'
+
 //import { RenderPass, EffectComposer, OutlinePass } from "three-outlinepass"
 
 import { InstancedMesh2 } from '@three.ez/instanced-mesh';
@@ -974,8 +976,32 @@ setTimeout(() => {
 		gui.add(grasses.scale, 'z').max(1).min(-1).step(0.1)
 
 
+		gui.add(stats, 'renderCalls').name('Render Calls').listen();
+gui.add(stats, 'triangles').name('Triangles').listen();
+gui.add(stats, 'geometries').name('Geometries').listen();
+gui.add(stats, 'textures').name('Textures').listen();
+
+
+
+
 
 }, 1000);
+
+const stats = {
+  renderCalls: 0,
+  triangles: 0,
+  geometries: 0,
+  textures: 0
+};
+
+var stats1 = new Stats();
+
+
+
+//stats1.showPanel( 0 );
+document.body.appendChild( stats1.dom );
+
+
 
 
 
@@ -983,9 +1009,14 @@ setTimeout(() => {
 
 
 function animate() {
+	stats1.begin();
+  
 	const deltaTime = clock.getDelta();
 
 	requestAnimationFrame(animate);
+
+	// Очищаем предыдущую статистику
+  	renderer.info.reset();
 
 	activeCamera.update(deltaTime);
 
@@ -1025,6 +1056,15 @@ function animate() {
     
 
 	annRenderer.render(scene, activeCamera);
+
+
+	stats.renderCalls = renderer.info.render.calls;
+	stats.triangles = renderer.info.render.triangles;
+	stats.geometries = renderer.info.memory.geometries;
+	stats.textures = renderer.info.memory.textures;
+
+	// Рендеринг...
+  stats1.end();
     // скрыть перекрываемые  аннотации при движении (используется raycaster, сильно тормозит приложение)
     // hideInvisibleAnns(activeCamera, servObj && servObj.annotations)
 }
