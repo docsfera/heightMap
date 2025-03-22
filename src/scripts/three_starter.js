@@ -86,7 +86,7 @@ scene.composer = null;
 //scene.fog = new THREE.Fog( 0xcccccc, 1, 1500 );
 
 
-let plane, flatPlane, material, flatMaterial
+let mapPlane, riverPlane, mapPlaneMaterial, riverMaterial
 
 let positionRenderTarget , positionScene, positionCamera, positionMesh
 
@@ -101,6 +101,22 @@ class InstancedFloat16BufferAttribute extends THREE.InstancedBufferAttribute {
 	}
 };
 
+const textureLoader = new THREE.TextureLoader()
+const displacement = textureLoader.load('./3d/map2.jpg')
+const map = textureLoader.load('./3d/tex.png')
+
+const mapPlaneWidth = 200
+const mapPlaneHeight = 200
+const mapPlaneSegments = 400
+const mapPlaneDisplacementScale = 30
+const riverPlaneSegments = 2
+
+const fragColorPlaneWidth = 200
+const fragColorPlaneHeight = 200
+const fragColorPlaneSegments = 10//mapPlaneSegments
+
+const fragColorPlaneDisplacementScale = 30
+
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
 		scene.add(gltf.scene);
@@ -109,105 +125,40 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		console.log(scene, renderer);
 
 
-		//////////////////
-
-
-
-		// const geometry = new THREE.PlaneGeometry();
-		// const material = new THREE.MeshStandardMaterial({color: "#ff0000"});
-
-
-		// const mesh = new THREE.Mesh(geometry, material)
-
-		// scene.add(mesh)
-
-		const width = 200;
-        const height = 200;
-        const segments = 400;
-
-        const loader = new THREE.TextureLoader();
-        const displacement = loader.load('./3d/map2.jpg');
-
-        const map = loader.load('./3d/tex.png');
-
-        const geometry = new THREE.PlaneGeometry(width, height, segments, segments);
-        const baseMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff, //Red
-            map:map,
-            //wireframe: true,
-            displacementMap: displacement,
-            displacementScale: 30,
-            //wireframe: true
-        });
-
-  //       displacement.needsUpdate = true;
-		// displacement.onLoad = () => {
-		//     // Получаем данные из displacementMap
-		//     const canvas = document.createElement('canvas');
-		//     const ctx = canvas.getContext('2d');
-		//     canvas.width = displacement.image.width;
-		//     canvas.height = displacement.image.height;
-		//     ctx.drawImage(displacement.image, 0, 0);
-		//     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-		//     // Обновляем позиции вершин
-		//     const positions = geometry.attributes.position.array;
-		    
-		//     for (let i = 0; i < positions.length; i += 3) {
-		//         // Нормализованные UV-координаты
-		//         const u = (positions[i] / width + 0.5);
-		//         const v = (positions[i + 2] / height + 0.5);
-		        
-		//         // Координаты в текстуре
-		//         const x = Math.floor(u * (canvas.width - 1));
-		//         const y = Math.floor(v * (canvas.height - 1));
-		        
-		//         // Получаем значение высоты (R-канал)
-		//         const displacementValue = imageData[(y * canvas.width + x) * 4] / 255;
-		        
-		//         // Обновляем Y-координату
-		//         positions[i + 1] = displacementValue * baseMaterial.displacementScale;
-		//     }
-
-		//     // Обновляем геометрию
-		//     geometry.attributes.position.needsUpdate = true;
-		//     geometry.computeVertexNormals();
-		//     geometry.computeBoundingBox();
-		//     geometry.computeBoundingSphere();
-
-
-		// };
-
-       //console.log({geometry})
-
-
-
+		////////////////// MAP GEOMETRY ////////////
 
 		
 
         
 
+        const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
+        const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
+            map:map,
+            //wireframe: true,
+            displacementMap: displacement,
+            displacementScale: mapPlaneDisplacementScale,
+        })
 
-        const uniforms = {
-        	uDisplacementMap: { value: displacement },
-            uDisplacementScale: { value: 1.0 },
-            uTime: { value: 0.0 },
-        }
+        // const uniforms = {
+        // 	uDisplacementMap: { value: displacement },
+        //     uDisplacementScale: { value: 1.0 },
+        //     uTime: { value: 0.0 },
+        // }
 
-        material = new CustomShaderMaterial({
-	        baseMaterial: baseMaterial,
-	        vertexShader: shaderV,
-	        fragmentShader: shaderF,
-	        uniforms: uniforms,
-	        onBeforeCompile: (shader) => {console.log({shader})}
-	    });
+     //    mapPlaneMaterial = new CustomShaderMaterial({
+	    //     baseMaterial: baseMaterial,
+	    //     vertexShader: shaderV,
+	    //     fragmentShader: shaderF,
+	    //     uniforms: uniforms,
+	    //     onBeforeCompile: (shader) => {console.log({shader})}
+	    // });
 
-	    flatMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x00ffff, //Red
-            
-        });
+	    // riverMaterial = new THREE.MeshStandardMaterial({ 
+     //        color: 0x00ffff, //Red
+     //    })
 
-	    flatMaterial = new THREE.ShaderMaterial({
+	    riverMaterial = new THREE.ShaderMaterial({
 	    	uniforms: THREE.UniformsUtils.merge( [
 				THREE.UniformsLib[ 'fog' ], {
 					uTime: {value: 0.0}
@@ -216,93 +167,67 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	    	vertexShader: waterV,
 	    	fragmentShader: waterF,
 	        fog: true,
-	    });
+	    })
 
+	    mapPlane = new THREE.Mesh(mapPlaneGeometry, mapPlaneMaterial)
+	    riverPlane = new THREE.Mesh(new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, riverPlaneSegments, riverPlaneSegments), riverMaterial)
 
-	   
+        mapPlane.rotation.x = -Math.PI / 2
+        riverPlane.rotation.x = -Math.PI / 2
 
-	    plane = new THREE.Mesh(geometry, baseMaterial);
-	    flatPlane = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 2, 2), flatMaterial)
+        mapPlane.position.y = 0.1
+        riverPlane.position.y = 2
 
-        plane.rotation.x = -Math.PI / 2
-        flatPlane.rotation.x = -Math.PI / 2
-
-        plane.position.y = 0.1
-        flatPlane.position.y = 2
-
-        scene.add(plane)
-        //scene.add(flatPlane)
-
-
+        scene.add(mapPlane)
+        scene.add(riverPlane)
 
         /// UPDATE VERTEX HEIGHT ////
 
-        const positionMaterial = new CustomShaderMaterial({
-        	baseMaterial: baseMaterial,
-		    vertexShader: `
-		        varying vec4 vWorldPosition;
-		        void main() {
-		            // Сохраняем мировую позицию вершины
-		            vWorldPosition = modelMatrix * vec4(position, 1.0);
-		            gl_Position = projectionMatrix * viewMatrix * vWorldPosition;
-		        }
-		    `,
-		    fragmentShader: `
-		        varying vec4 vWorldPosition;
-		        void main() {
-		            // Записываем позицию в RGBA-текстуру (нормализованную)
-		            gl_FragColor = vec4(vWorldPosition.xyz / 100.0, 1.0); 
-		        }
-		    `
-		});
+  //       const positionMaterial = new CustomShaderMaterial({
+  //       	baseMaterial: mapPlaneMaterial,
+		//     vertexShader: `
+		//         varying vec4 vWorldPosition;
+		//         void main() {
+		//             // Сохраняем мировую позицию вершины
+		//             vWorldPosition = modelMatrix * vec4(position, 1.0);
+		//             gl_Position = projectionMatrix * viewMatrix * vWorldPosition;
+		//         }
+		//     `,
+		//     fragmentShader: `
+		//         varying vec4 vWorldPosition;
+		//         void main() {
+		//             // Записываем позицию в RGBA-текстуру (нормализованную)
+		//             gl_FragColor = vec4(vWorldPosition.xyz / 100.0, 1.0); 
+		//         }
+		//     `
+		// })
 
-		
+		// positionRenderTarget  = new THREE.WebGLRenderTarget(1024, 1024, {
+		//     type: THREE.FloatType,
+		//     format: THREE.RGBAFormat
+		// })
 
-		positionRenderTarget  = new THREE.WebGLRenderTarget(1024, 1024, {
-		    type: THREE.FloatType,
-		    format: THREE.RGBAFormat
-		});
-
-		
-			//Создаем сцену и камеру для рендера позиций
-		positionScene = new THREE.Scene();
-		positionCamera = new THREE.PerspectiveCamera( 45, 1.2, 1, 1000 )//activeCamera.clone(); // Используем ту же камеру
-		positionMesh = plane.clone(); // Копируем меш
-		positionMesh.material = positionMaterial;
-		positionScene.add(positionMesh);
-
-	
-
-        const pstt = geometry.attributes.position.array;
-
-        console.log({pstt})
-
-        for (let i = 0; i < pstt.length; i += 3) {
-			const geometry = new THREE.BoxGeometry( 1, 1, 1 ); 
-			const material = new THREE.MeshBasicMaterial( {color: 0x00ff00} ); 
-			const cube = new THREE.Mesh( geometry, material ); 
-			//scene.add( cube );
-			cube.position.x = pstt[i]
-			cube.position.z = pstt[i+1]
-			cube.position.y = pstt[i+2]
-		}
+		// //Создаем сцену и камеру для рендера позиций
+		// positionScene = new THREE.Scene()
+		// positionCamera = new THREE.PerspectiveCamera( 45, 1.2, 1, 1000 )//activeCamera.clone(); // Используем ту же камеру
+		// positionMesh = mapPlane.clone() // Копируем меш
+		// positionMesh.material = positionMaterial
+		// positionScene.add(positionMesh)
 
 
+        // const mapPlaneVertexPositions = mapPlaneGeometry.attributes.position.array;
 
-        scene.add(flatPlane)
+        // console.log({mapPlaneVertexPositions})
 
-       
-
-
-
-
-
-
-
-
-
-
-
+  //       for (let i = 0; i < mapPlaneVertexPositions.length; i += 3) {
+		// 	const geometry = new THREE.BoxGeometry( 1, 1, 1 )
+		// 	const material = new THREE.MeshBasicMaterial({color: 0x00ff00})
+		// 	const cube = new THREE.Mesh(geometry, material)
+		// 	//scene.add( cube );
+		// 	cube.position.x = mapPlaneVertexPositions[i]
+		// 	cube.position.z = mapPlaneVertexPositions[i+1]
+		// 	cube.position.y = mapPlaneVertexPositions[i+2]
+		// }
 
 
 		/////////////////////
@@ -376,15 +301,6 @@ renderer.toneMapping = THREE.ReinhardToneMapping;
 renderer.toneMappingExposure = 1.2;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-const renderer2 = new THREE.WebGLRenderer();
-
-console.log(scene.activeRenderer.render)
-console.log(scene.activeRenderer.render.setRenderTarget)
-console.log(annRenderer.render.setRenderTarget)
-console.log(renderer2.setRenderTarget)
-
-
-
 ///////// GPGPU ///////////////
 
 		// const baseGeometry = {}
@@ -436,52 +352,46 @@ console.log(renderer2.setRenderTarget)
 	////////////////////////////////////
 
 
-	const width1 = 200;
-        const height1 = 200;
-        const segments1 = 10;
 
-        const loader1 = new THREE.TextureLoader();
-        const displacement1 = loader1.load('./3d/map2.jpg');
 
-        const map1 = loader1.load('./3d/tex.png');
 
-        const geometry1 = new THREE.PlaneGeometry(width1, height1, segments1, segments1);
-        const baseMaterial1 = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff, //Red
-            //map:map1,
-            //wireframe: true,
-            displacementMap: displacement1,
-            displacementScale: 30,
-            //wireframe: true
-        });
+//////////////// FRAGCOLOR PLANE ////////////////////
 
-        const uniforms1 = {
-        	uDisplacementMap: { value: displacement1 },
-            uDisplacementScale: { value: 50.0 },
-            uTime: { value: 0.0 },
-        }
 
-        const material1 = new CustomShaderMaterial({
-	        baseMaterial: baseMaterial1,
-	        vertexShader: landV,
-	        fragmentShader: landF,
-	        uniforms: uniforms1,
-	    });
 
-	    const material2 = new THREE.ShaderMaterial({
-	    	vertexShader: landV,
-	        fragmentShader: landF,
-	        uniforms: uniforms1,
-	    })
 
-	    const plane1 = new THREE.Mesh(geometry1, material2);
-        plane1.rotation.x = -Math.PI / 2
+const fragColorPlaneGeometry = new THREE.PlaneGeometry(fragColorPlaneWidth, fragColorPlaneHeight, fragColorPlaneSegments, fragColorPlaneSegments)
 
-        plane1.position.y = 0.1
+// const fragColorPlaneBaseMaterial = new THREE.MeshStandardMaterial({ 
+//     color: 0xffffff,
+//     displacementMap: displacement,
+//     displacementScale: fragColorPlaneDisplacementScale,
+//     //wireframe: true
+// })
 
-        //scene.add(plane1) // plane with fragcolor
+const fragColorPlaneMaterialUniforms = {
+    uDisplacementMap: { value: displacement },
+    uDisplacementScale: { value: 50.0 },
+    uTime: { value: 0.0 },
+}
 
-        //console.log(plane1)
+// const fragColorPlaneMaterial = new CustomShaderMaterial({
+// 	baseMaterial: fragColorPlaneBaseMaterial,
+// 	vertexShader: landV,
+// 	fragmentShader: landF,
+// 	uniforms: uniforms1,
+// })
+
+const fragColorPlaneMaterial = new THREE.ShaderMaterial({
+	vertexShader: landV,
+	fragmentShader: landF,
+	uniforms: fragColorPlaneMaterialUniforms,
+})
+
+const fragColorPlane = new THREE.Mesh(fragColorPlaneGeometry, fragColorPlaneMaterial)
+fragColorPlane.rotation.x = -Math.PI / 2
+fragColorPlane.position.y = 0.1
+//scene.add(fragColorPlane) // plane with fragcolor
 
 
   //       const gpgpu1 = {}
@@ -508,9 +418,12 @@ console.log(renderer2.setRenderTarget)
 
 
 // Параметры:
-const tt = 700
-const width2 = tt;
-const height2 = tt;
+const tt = 1000
+const renderTargetWidth = tt
+const renderTargetHeight = tt
+
+const planePositionsSize = 5
+
 const options = {
 	type: THREE.FloatType
   // format: THREE.RGBAFormat,    // Формат данных
@@ -521,95 +434,39 @@ const options = {
 };
 
 // Создаем отдельную сцену и камеру для рендера в текстуру
-const textureScene = new THREE.Scene();
-const wh = 205
-const textureCamera = new THREE.OrthographicCamera( wh / - 2, wh / 2, wh / 2, wh / - 2, 1, 1000 );
+const textureScene = new THREE.Scene()
+const wh = 200
+const textureCamera = new THREE.OrthographicCamera( wh / - 2, wh / 2, wh / 2, wh / - 2, 1, 1000 )
 
-const mp =plane1.clone()
-mp.rotation.z = -Math.PI / 2
-//plane1.rotation.y = -Math.PI / 2
-//textureScene.add(box);
-textureScene.add(mp);
+const fragColorPlaneClone = fragColorPlane.clone()
+fragColorPlaneClone.rotation.z = -Math.PI / 2
+textureScene.add(fragColorPlaneClone)
 
 // Позиционируем камеру
-textureCamera.position.y = 100;
+textureCamera.position.y = 100
 textureCamera.lookAt(0,0,0)
 
-const renderTarget = new THREE.WebGLRenderTarget(width2, height2, options);
-
+const renderTarget = new THREE.WebGLRenderTarget(renderTargetWidth, renderTargetHeight, options)
 
 // Создаем материал с полученной текстурой
-const planeMaterial = new THREE.MeshBasicMaterial({
+const planePositionsMaterial = new THREE.MeshBasicMaterial({
   map: renderTarget.texture
 });
 
 // Применяем к объекту в основной сцене
-const plane11 = new THREE.Mesh(
-  new THREE.PlaneGeometry(5, 5),
-  planeMaterial
+const planePositions = new THREE.Mesh(
+  new THREE.PlaneGeometry(planePositionsSize, planePositionsSize),
+  planePositionsMaterial
 );
-plane11.position.z = -0.1
-scene.add(plane11); // renderTarget Plnae
-
-
-
+planePositions.position.z = -0.1
+scene.add(planePositions) // renderTarget Plnae
 
 console.log({tex: renderTarget.texture})
 
+/////////////// READ FROM TEXTURE ///////////////////
 
-//// Use the GPGPU to position particles 
-// Geometry
-// const particlesUvArray = new Float32Array(plane1.geometry.attributes.position.count * 2)
-
-// particles.geometry = new THREE.BufferGeometry()
-// particles.material = new THREE.ShaderMaterial({
-//     vertexShader: `
-//     	void main(){
-//     		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-//     	}
-
-//     `,
-//     fragmentShader: `
-//     	void main(){
-//     		gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-//     	}
-
-//     `,
-//     uniforms:
-//     {
-//         // ...
-//         uParticlesTexture: new THREE.Uniform()
-//     }
-// })
-
-
-// const mySize = Math.ceil(Math.sqrt(plane1.geometry.attributes.position.count))
-
-// for(let y = 0; y < mySize; y++)
-// {
-//     for(let x = 0; x < mySize; x++)
-//     {
-//         const i = (y * mySize + x)
-//         const i2 = i * 2
-
-//         // Particles UV
-//         const uvX = (x + 0.5) / mySize
-//         const uvY = (y + 0.5) / mySize
-
-//         particlesUvArray[i2 + 0] = uvX;
-//         particlesUvArray[i2 + 1] = uvY;
-//     }
-// }
-
-// particles.geometry.setDrawRange(0, plane1.geometry.attributes.position.count)
-// particles.geometry.setAttribute('aParticlesUv', new THREE.BufferAttribute(particlesUvArray, 2))
-// // Points
-// particles.points = new THREE.Points(particles.geometry, particles.material)
-// scene.add(particles.points)
-
-
-
-const pixels = new Float32Array(tt * tt * 4);
+const pixels = new Float32Array(tt * tt * 4)
+const textureScaleZ = 0.75
 setTimeout(() => {
 
     renderer.readRenderTargetPixels(
@@ -626,8 +483,8 @@ setTimeout(() => {
     for (let i = 0; i < pixels.length; i += 4) {
         const x = pixels[i];
         const y = pixels[i + 1] ;
-        const z = pixels[i + 2]  * 0.75;
-        if (x !== 0 || y !== 0 || z !== 0) { // Фильтруем пустые пиксели
+        const z = pixels[i + 2]  * textureScaleZ;
+        if (z > 5) { // x !== 0 || y !== 0 || z !== 0 Фильтруем пустые пиксели
             vertexPositions.push(new THREE.Vector3(x, y, z));
             indicesArr.push(j, j+1, j+2)
             verticesArr.push(x, y, z)
@@ -637,206 +494,156 @@ setTimeout(() => {
 
     console.log('Позиции вершин:', vertexPositions);
 
-    const vertices2 = new Float32Array(verticesArr);
- //    const indices = new Uint16Array(indicesArr);
-	
+    const planeByTextureVertices = new Float32Array(verticesArr)
+	const planeByTextureIndicesArr = []
 
- //    const geom4 = new THREE.BufferGeometry();
-	// geom4.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-	// geom4.setIndex(new THREE.BufferAttribute(indices, 1));
+	for (let y = tt - 2; y >= 0; y--) {
+		for (let x = tt - 2; x >= 0; x--) {
+		    // Вычисляем индексы вершин для текущего квада
+		    const a = (y + 1) * tt + x + 1  // Право-низ
+		    const b = (y + 1) * tt + x      // Лево-низ
+		    const c = y * tt + x + 1        // Право-верх
+		    const d = y * tt + x            // Лево-верх
 
-	const material4 = new THREE.MeshBasicMaterial({ 
-	    color: 0x0000ff,
-	    wireframe: true, // Для визуализации треугольников
-	    side: THREE.DoubleSide
-	});
+		    // Первый треугольник (правый нижний треугольник квада)
+		    planeByTextureIndicesArr.push(a, b, c)
+		    // Второй треугольник (левый верхний треугольник квада)
+		    planeByTextureIndicesArr.push(c, b, d)
+		}
+	}
+	const planeByTextureIndices = new Uint16Array(planeByTextureIndicesArr)
+
+	const planeByTextureGeometry = new THREE.BufferGeometry()
+	planeByTextureGeometry.setAttribute('position', new THREE.BufferAttribute(planeByTextureVertices, 3))
+	planeByTextureGeometry.setIndex(new THREE.BufferAttribute(planeByTextureIndices, 1))
 
 
-	const indicesArr2 = [];
-
-		for (let y = tt - 2; y >= 0; y--) {
-  for (let x = tt - 2; x >= 0; x--) {
-    // Вычисляем индексы вершин для текущего квада
-    const a = (y + 1) * tt + x + 1;  // Право-низ
-    const b = (y + 1) * tt + x;      // Лево-низ
-    const c = y * tt + x + 1;        // Право-верх
-    const d = y * tt + x;            // Лево-верх
-
-    // Первый треугольник (правый нижний треугольник квада)
-    indicesArr2.push(a, b, c);
-    
-    // Второй треугольник (левый верхний треугольник квада)
-    indicesArr2.push(c, b, d);
-  }
-}
-	const indices2 = new Uint16Array(indicesArr2);
-
-	const geom5 = new THREE.BufferGeometry();
-	geom5.setAttribute('position', new THREE.BufferAttribute(vertices2, 3));
-	geom5.setIndex(new THREE.BufferAttribute(indices2, 1));
-
-	// 6. Создаем меш и добавляем на сцену
-	const mesh = new THREE.Mesh(geom5, material4);
-	// const mesh = new THREE.Points(geom4, new THREE.PointsMaterial({
-	//     color: 0xff0000,     
-	//     size: 2,          
-	//     transparent: true,    
-	//     alphaTest: 0.5        
-	// }));
-
-	//scene.add(mesh);
-
-	 ////// GRASSS ///////
+	/////////// GRASSS ///////////
 		
-		const grassCount = 900//200
+	const grassCount = 150000
 
+	const planeByTextureMaterial = new THREE.MeshStandardMaterial({
+		color: new THREE.Color(0.05, 0.2, 0.01),
+		wireframe: true
+	})
 
-		const grassGeometry = geom5
-		//const grassGeometry = new THREE.PlaneGeometry(50, 50, grassCount, grassCount);
-		const grassMaterial = new THREE.MeshStandardMaterial({
-		  color: new THREE.Color(0.05, 0.2, 0.01),
-		  wireframe: true
-		})
+	const planeByTexture = new THREE.Mesh(planeByTextureGeometry, planeByTextureMaterial)
+	planeByTexture.rotation.x = -Math.PI / 2
+	planeByTexture.updateMatrixWorld(true)
 
-		const grassMesh = new THREE.Mesh(grassGeometry, grassMaterial);
+	//scene.add(planeByTexture)
 
-		// Поворачиваем плоскость ДО вычисления позиций
-		grassMesh.rotation.x = -Math.PI / 2;
+	// Получаем мировые координаты вершин
+	//const planeByTexturePositions = planeByTextureGeometry.attributes.position.array
 
-		// Обновляем матрицу преобразований плоскости
-		grassMesh.updateMatrixWorld(true);
+	const worldPosition = new THREE.Vector3()
 
-		// Получаем мировые координаты вершин
-		const positions = grassGeometry.attributes.position.array;
-		const worldPosition = new THREE.Vector3();
+	/*const testPos = []
 
+	for (let i = 0; i < positions.length; i += 3) {
+		testPos.push(new THREE.Vector3(positions[i], positions[i+1], positions[i+2]))
+	}*/
 
-		/*const testPos = []
+	// const grassShaderMat = new THREE.ShaderMaterial({ 
+	// 	vertexShader: `
+	// 	    #include <fog_pars_vertex>
+	// 	    attribute mat4 instanceMatrix; // Добавляем объявление атрибута
+	// 	    varying vec2 vUv;
+	// 		void main(){
+	// 			vUv = uv;
+	// 		    //gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+	// 		    gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
 
-		for (let i = 0; i < positions.length; i += 3) {
-			testPos.push(new THREE.Vector3(positions[i], positions[i+1], positions[i+2]))
-		}*/
+	// 		    #include <begin_vertex>
+	// 			#include <project_vertex>
+	// 			#include <fog_vertex>
+	// 		}
+	// 	`,
+	// 	fragmentShader: `
+	// 	    #include <fog_pars_fragment>
+	// 	    varying vec2 vUv;
+	// 		void main(){
+	// 			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+	// 			#include <fog_fragment>
+	// 		}
+	// 	`,
+	// 	uniforms: THREE.UniformsUtils.merge( [
+	// 	THREE.UniformsLib[ 'fog' ], {
+	// 		uTime: {value: 0.0}
+	// 	}
+ //      	]),
+	// 	side: THREE.DoubleSide,
+	// 	//fog: true,
+	// })
 
+	// UV-координаты для текстур
+	const grassUvs = new Float32Array([
+		// Первый треугольник
+		0, 0,    // vertex 0
+		1, 0.33, // vertex 1
+		1, 0,    // vertex 2
+		// Второй треугольник
+		0, 0,    // vertex 3
+		1, 0.33, // vertex 4
+		0, 0.33, // vertex 5
+		// Третий треугольник
+		0, 0.33, // vertex 6
+		1, 0.66, // vertex 7
+		1, 0.33, // vertex 8
+		// Четвертый треугольник
+		0, 0.33, // vertex 9
+		1, 0.66, // vertex 10
+		0, 0.66, // vertex 11
+		// Пятый треугольник
+		0, 0.66, // vertex 12
+		0.5, 1,  // vertex 13
+		1, 0.66, // vertex 14
+	])
 
+	// Индексы для всех треугольников
+	const grassIndices = new Uint16Array([
+		0, 1, 2,   // Первый треугольник
+		3, 4, 5,   // Второй треугольник
+		6, 7, 8,   // Третий треугольник
+		9, 10, 11, // Четвертый треугольник
+		12, 13, 14 // Пятый треугольник
+	])
 
+	//const rand = Math.random()
 
-		const grassShaderMat = new THREE.ShaderMaterial({ 
+	const faceHeight = 0.4
+	const grassAngleSide = 1
+	const grassAngle = 0.1 * grassAngleSide
 
-		    	vertexShader: `
-		    		#include <fog_pars_vertex>
-		    		attribute mat4 instanceMatrix; // Добавляем объявление атрибута
-		    		varying vec2 vUv;
-			    	void main(){
+	const grassVertexsArray = new Float32Array([
+		-0.1, faceHeight * 0, 0,
+		0.0, faceHeight * 1, 0,
+		0.0, faceHeight * 0, 0,
 
-			    		vUv = uv;
-			    		//gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-			    		gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
+		-0.1, faceHeight * 0, 0,
+		0.0, faceHeight * 1, 0,
+		-0.1, faceHeight * 1, 0,
 
-			    		#include <begin_vertex>
-						#include <project_vertex>
-						#include <fog_vertex>
-			    	}
-		    	`,
-		    	fragmentShader: `
-		    		#include <fog_pars_fragment>
-		    		varying vec2 vUv;
-			    	void main(){
+		-0.1, faceHeight * 1, 0,
+		0.0, faceHeight * 2, grassAngle,
+		0.0, faceHeight * 1, 0,
 
-			    		// vec3 baseColor = vec3(0.05, 0.2, 0.01);
-			    		// vec3 tipColor = vec3(0.5, 0.5, 0.1);
+		-0.1, faceHeight * 1, 0,
+		0.0, faceHeight * 2, grassAngle,
+		-0.1, faceHeight * 2, grassAngle,
 
+		-0.1, faceHeight * 2, grassAngle,
+		-0.05, faceHeight * 3, grassAngle * 3,
+		0.0, faceHeight * 2, grassAngle,
+	])
 
-			    		// vec3 clr = mix(baseColor, tipColor, vUv.x);
+	//const grassVertexsPosition = new THREE.BufferAttribute(grassVertexsArray, 3)
+	const grassGeometry = new THREE.BufferGeometry()
+	grassGeometry.setAttribute('position', new THREE.BufferAttribute(grassVertexsArray, 3))
+	grassGeometry.setAttribute('uv', new THREE.BufferAttribute(grassUvs, 2))
+	grassGeometry.setIndex(new THREE.BufferAttribute(grassIndices, 1))
 
-			    		// gl_FragColor = vec4(clr, 1.0);
-
-			    		 gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-
-			    		#include <fog_fragment>
-			    	}
-		    	`,
-		    	uniforms: THREE.UniformsUtils.merge( [
-				THREE.UniformsLib[ 'fog' ], {
-					uTime: {value: 0.0}
-				}
-      		]),
-		    	side: THREE.DoubleSide,
-		    	//fog: true,
-
-		    })
-
-		  // UV-координаты для текстур
-		const uvs = new Float32Array([
-			    // Первый треугольник
-			    0, 0,    // vertex 0
-			    1, 0.33, // vertex 1
-			    1, 0,    // vertex 2
-
-			    // Второй треугольник
-			    0, 0,    // vertex 3
-			    1, 0.33, // vertex 4
-			    0, 0.33, // vertex 5
-
-			    // Третий треугольник
-			    0, 0.33, // vertex 6
-			    1, 0.66, // vertex 7
-			    1, 0.33, // vertex 8
-
-			    // Четвертый треугольник
-			    0, 0.33, // vertex 9
-			    1, 0.66, // vertex 10
-			    0, 0.66, // vertex 11
-
-			    // Пятый треугольник
-			    0, 0.66, // vertex 12
-			    0.5, 1,  // vertex 13
-			    1, 0.66, // vertex 14
-			]);
-
-			// Индексы для всех треугольников
-			const indices = new Uint16Array([
-			    0, 1, 2,   // Первый треугольник
-			    3, 4, 5,   // Второй треугольник
-			    6, 7, 8,   // Третий треугольник
-			    9, 10, 11, // Четвертый треугольник
-			    12, 13, 14 // Пятый треугольник
-			]);
-
-
-		//const rand = Math.random()
-
-		 const faceHeight = 0.4
-		  const grassAngleSide = 1
-		  const grassAngle = 0.1 * grassAngleSide
-
-		  const pa = new Float32Array([
-		  	-0.1, faceHeight * 0, 0,
-		  	0.0, faceHeight * 1, 0,
-		  	0.0, faceHeight * 0, 0,
-
-		  	-0.1, faceHeight * 0, 0,
-		  	0.0, faceHeight * 1, 0,
-		  	-0.1, faceHeight * 1, 0,
-
-		  	-0.1, faceHeight * 1, 0,
-		  	0.0, faceHeight * 2, grassAngle,
-		  	0.0, faceHeight * 1, 0,
-
-		  	-0.1, faceHeight * 1, 0,
-		  	0.0, faceHeight * 2, grassAngle,
-		  	-0.1, faceHeight * 2, grassAngle,
-
-		  	-0.1, faceHeight * 2, grassAngle,
-		  	-0.05, faceHeight * 3, grassAngle * 3,
-		  	0.0, faceHeight * 2, grassAngle,
-		  ])
-
-		  const pat = new THREE.BufferAttribute(pa, 3)
-		const geom = new THREE.BufferGeometry()
-
-		geom.setAttribute('position', new THREE.BufferAttribute(pa, 3));
-		geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-		geom.setIndex(new THREE.BufferAttribute(indices, 1));
+	console.log({grassGeometry})
 
 		// for (let i = 0; i < positions.length; i += 3) {
 
@@ -868,145 +675,128 @@ setTimeout(() => {
 
 		// }
 
-		const count = grassCount*grassCount
+	//const count = grassCount * grassCount
 
-		console.log({geom})
+	const grassMaterial = new THREE.MeshStandardMaterial({color: "green", side: THREE.DoubleSide})
 
-		const redoMAterial = new THREE.MeshStandardMaterial({color: "green", side: THREE.DoubleSide})
-
-		redoMAterial.onBeforeCompile = (shader) => {
-		  	// 	shader.vertexShader = `
-			  //   varying vec2 vUv; // Объявляем varying в вершинном шейдере
-			  // ` + shader.vertexShader;
-
-			  shader.vertexShader = shader.vertexShader.replace(
-			    "#include <common>",
-			    `
+	grassMaterial.onBeforeCompile = (shader) => {
+		shader.vertexShader = shader.vertexShader.replace(
+			"#include <common>",
+			`
 			    #include <common>
 			    varying vec2 vUv; // Добавляем после include <common>
-			    `
-			  );
-
-			  // 2. Передаем UV-координаты из атрибута в varying
-			  shader.vertexShader = shader.vertexShader.replace(
-			    "#include <uv_vertex>",
-			    `
+			`
+		)
+		// 2. Передаем UV-координаты из атрибута в varying
+		shader.vertexShader = shader.vertexShader.replace(
+			"#include <uv_vertex>",
+			`
 			    vUv = uv; // Сохраняем UV во varying переменную
 			    #include <uv_vertex>
-			    `
-			  );
+			`
+		)
+		// 3. Добавляем varying во фрагментный шейдер
+		shader.fragmentShader = `
+			varying vec2 vUv; // Объявляем во фрагментном шейдере
+		` + shader.fragmentShader
 
-			  // 3. Добавляем varying во фрагментный шейдер
-			  shader.fragmentShader = `
-			    varying vec2 vUv; // Объявляем во фрагментном шейдере
-			  ` + shader.fragmentShader;
+		// 4. Теперь можно использовать vUv во фрагментном шейдере
+		shader.fragmentShader = shader.fragmentShader.replace(
+			"#include <color_fragment>",
+			`
+			vec3 baseColor = vec3(0.2, 0.6, 0.3);
+			vec3 tipColor = vec3(0.4, 0.9, 0.5);
+			float gradient = smoothstep(0.3, 0.8, vUv.y);
 
-			  // 4. Теперь можно использовать vUv во фрагментном шейдере
-			  shader.fragmentShader = shader.fragmentShader.replace(
-			    "#include <color_fragment>",
-			    `
-			     vec3 baseColor = vec3(0.2, 0.6, 0.3);
-			    vec3 tipColor = vec3(0.4, 0.9, 0.5);
-			    float gradient = smoothstep(0.3, 0.8, vUv.y);
+			//vec3 clr = mix(baseColor, tipColor, vUv.x);
+			vec3 clr = mix(baseColor, tipColor, vUv.y);
+			vec3 clr2 = mix(baseColor, tipColor, vUv.x);
 
-				//vec3 clr = mix(baseColor, tipColor, vUv.x);
-				vec3 clr = mix(baseColor, tipColor, vUv.y);
-				vec3 clr2 = mix(baseColor, tipColor, vUv.x);
+			diffuseColor = vec4(clr , 1.0);
+		`
+		)
+		// Обновляем шейдер материала
+		grassMaterial.userData.shader = shader
+	}
 
-			    diffuseColor = vec4(clr , 1.0);
-			    `
-			  );
+	const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
 
-		  // Обновляем шейдер материала
-		  redoMAterial.userData.shader = shader;
-		};
+	const planeByTextureVerticesVectors = []
+	const planeByTextureVertexsPositions = planeByTextureGeometry.attributes.position.array
 
-		const grasses = new InstancedMesh2(geom, redoMAterial);
-		//const grasses = new InstancedMesh2(geom, grassShaderMat);
+	for (let i = 0; i < planeByTextureVertexsPositions.length; i += 3) {
+		planeByTextureVerticesVectors.push(new THREE.Vector3(planeByTextureVertexsPositions[i], planeByTextureVertexsPositions[i+1], planeByTextureVertexsPositions[i+2]))
+	}
 
+	console.warn(planeByTextureVerticesVectors)
 
-		const testPos = []
+	const prevRandoms = []
+	let lostedGrass = 0
 
-		const positionsss = geom5.attributes.position.array
+	grasses.addInstances(grassCount, (obj, index) => {
+		// obj.position.x = 10 * (Math.random() * 2 - 1);
+		// obj.position.z = 10 * (Math.random() * 2 - 1);
 
-		
+		const random = Math.round(Math.random() * (planeByTextureVerticesVectors.length - 1))
 
-		for (let i = 0; i < positionsss.length; i += 3) {
-			testPos.push(new THREE.Vector3(positionsss[i], positionsss[i+1], positionsss[i+2]))
-		}
+		if(prevRandoms.includes(random)) lostedGrass++
 
-		grasses.addInstances(count, (obj, index) => {
-		  // obj.position.x = 10 * (Math.random() * 2 - 1);
-		  // obj.position.z = 10 * (Math.random() * 2 - 1);
+		prevRandoms.push(random)
 
-		  const r = Math.round(Math.random() * count)
-
-		  //console.log({r})
-
-		  const ps = testPos[r]
-
-		  //console.log({ps})
-		  if(ps && ps.z > 3){
-		  	obj.position.x = ps.x + Math.random() * 0.8 * 6
-		  obj.position.z = ps.y + Math.random() * 0.8 * 6
-		  obj.position.y = ps.z
-
-		  //obj.rotateY = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
-
-		  const quaternion = new THREE.Quaternion();
-		  quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ),  Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5));
-		  obj.quaternion = quaternion
-
-		  //console.log(obj)
-		  obj.updateMatrix();
-		  grasses.setMatrixAt(index, obj.matrix)
-		  }
-		  
-		});
-
-		grasses.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
-		grasses.instanceMatrix.needsUpdate = true
-
-		console.log(grasses.instanceMatrix.array)
-
-		scene.add(grasses)
-		//scene.add(grassMesh);
-		grasses.scale.z = -1
-
-		gui.add(grasses.scale, 'z').max(1).min(-1).step(0.1)
-
-
-		gui.add(stats, 'renderCalls').name('Render Calls').listen();
-gui.add(stats, 'triangles').name('Triangles').listen();
-gui.add(stats, 'geometries').name('Geometries').listen();
-gui.add(stats, 'textures').name('Textures').listen();
+		//console.log(planeByTextureVerticesVectors.length, random)
 
 
 
+		const randomVertexVector = planeByTextureVerticesVectors[random]
 
+		//console.log({ps})
+		//if(randomVertexVector ){ // && randomVertexVector.z > 3
+			obj.position.x = randomVertexVector.x + Math.random() * 0.8 * 6
+		 	obj.position.z = randomVertexVector.y + Math.random() * 0.8 * 6
+			obj.position.y = randomVertexVector.z
+			// obj.scale.y = 10
+			// obj.scale.x = 10
+			// obj.scale.z = 10
 
-}, 1000);
+			//obj.rotateY = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
+
+		 	const quaternion = new THREE.Quaternion()
+			quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ),  Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5))
+			obj.quaternion = quaternion
+			obj.updateMatrix()
+			grasses.setMatrixAt(index, obj.matrix)
+		//}
+	})
+
+	console.log({lostedGrass})
+
+	console.log({grassCount})
+	console.log({pvert: planeByTextureVerticesVectors.length})
+
+	grasses.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+	grasses.instanceMatrix.needsUpdate = true
+
+	console.log(grasses.instanceMatrix.array)
+
+	grasses.scale.z = -1
+	scene.add(grasses)
+	
+}, 1000)
 
 const stats = {
-  renderCalls: 0,
-  triangles: 0,
-  geometries: 0,
-  textures: 0
-};
+	renderCalls: 0,
+	triangles: 0,
+	geometries: 0,
+	textures: 0
+}
+
+gui.add(stats, 'renderCalls').name('Render Calls').listen()
+gui.add(stats, 'triangles').name('Triangles').listen()
+gui.add(stats, 'geometries').name('Geometries').listen()
+gui.add(stats, 'textures').name('Textures').listen()
 
 var stats1 = new Stats();
-
-
-
-//stats1.showPanel( 0 );
-document.body.appendChild( stats1.dom );
-
-
-
-
-
-
-
+document.body.appendChild(stats1.dom)
 
 function animate() {
 	stats1.begin();
@@ -1026,8 +816,8 @@ function animate() {
 
 	materials.updatableMaterials.forEach(mat => mat.animationUpdate(deltaTime))
 
-	material.uniforms.uTime.value += 0.01;
-	flatMaterial.uniforms.uTime.value += 0.01;
+	//material.uniforms.uTime.value += 0.01;
+	riverMaterial.uniforms.uTime.value += 0.01;
 
 	// renderer.render(scene, activeCamera);
 	// composer.render();
