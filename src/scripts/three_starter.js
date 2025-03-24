@@ -113,9 +113,12 @@ const riverPlaneSegments = 2
 
 const fragColorPlaneWidth = 200
 const fragColorPlaneHeight = 200
-const fragColorPlaneSegments = 10//mapPlaneSegments
+const fragColorPlaneSegments = 10//mapPlaneSegments//mapPlaneSegments
 
 const fragColorPlaneDisplacementScale = 30
+const textureScaleZ = 0.6
+
+const grassCount = 300000
 
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
@@ -466,7 +469,7 @@ console.log({tex: renderTarget.texture})
 /////////////// READ FROM TEXTURE ///////////////////
 
 const pixels = new Float32Array(tt * tt * 4)
-const textureScaleZ = 0.75
+
 setTimeout(() => {
 
     renderer.readRenderTargetPixels(
@@ -520,7 +523,7 @@ setTimeout(() => {
 
 	/////////// GRASSS ///////////
 		
-	const grassCount = 150000
+	
 
 	const planeByTextureMaterial = new THREE.MeshStandardMaterial({
 		color: new THREE.Color(0.05, 0.2, 0.01),
@@ -733,15 +736,26 @@ setTimeout(() => {
 	const prevRandoms = []
 	let lostedGrass = 0
 
+	const getRandomVector = () => Math.round(Math.random() * (planeByTextureVerticesVectors.length - 1))
+
+	const getUnicRandom = (random) => {
+		if(prevRandoms.includes(random)){
+			getUnicRandom(getRandomVector())
+		}else{
+			return random
+			prevRandoms.push(random)
+		}
+	}
+
 	grasses.addInstances(grassCount, (obj, index) => {
 		// obj.position.x = 10 * (Math.random() * 2 - 1);
 		// obj.position.z = 10 * (Math.random() * 2 - 1);
 
-		const random = Math.round(Math.random() * (planeByTextureVerticesVectors.length - 1))
+		const random = getUnicRandom(getRandomVector())
 
 		if(prevRandoms.includes(random)) lostedGrass++
 
-		prevRandoms.push(random)
+		//prevRandoms.push(random)
 
 		//console.log(planeByTextureVerticesVectors.length, random)
 
@@ -751,8 +765,8 @@ setTimeout(() => {
 
 		//console.log({ps})
 		//if(randomVertexVector ){ // && randomVertexVector.z > 3
-			obj.position.x = randomVertexVector.x + Math.random() * 0.8 * 6
-		 	obj.position.z = randomVertexVector.y + Math.random() * 0.8 * 6
+			obj.position.x = randomVertexVector.x + Math.random() * 0.8 
+		 	obj.position.z = randomVertexVector.y + Math.random() * 0.8 
 			obj.position.y = randomVertexVector.z
 			// obj.scale.y = 10
 			// obj.scale.x = 10
@@ -780,6 +794,9 @@ setTimeout(() => {
 
 	grasses.scale.z = -1
 	scene.add(grasses)
+
+	gui.add(grasses.position, 'x').min(-20).max(20)
+	gui.add(grasses.position, 'z').min(-20).max(20)
 	
 }, 1000)
 
@@ -787,13 +804,15 @@ const stats = {
 	renderCalls: 0,
 	triangles: 0,
 	geometries: 0,
-	textures: 0
+	textures: 0,
 }
 
 gui.add(stats, 'renderCalls').name('Render Calls').listen()
 gui.add(stats, 'triangles').name('Triangles').listen()
 gui.add(stats, 'geometries').name('Geometries').listen()
 gui.add(stats, 'textures').name('Textures').listen()
+
+
 
 var stats1 = new Stats();
 document.body.appendChild(stats1.dom)
