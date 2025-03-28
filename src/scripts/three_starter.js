@@ -86,7 +86,7 @@ scene.composer = null;
 //scene.fog = new THREE.Fog( 0xcccccc, 1, 1500 );
 
 
-let mapPlane, riverPlane, mapPlaneMaterial, riverMaterial
+let mapPlane, riverPlane, riverMaterial
 
 let positionRenderTarget , positionScene, positionCamera, positionMesh
 
@@ -113,12 +113,12 @@ const riverPlaneSegments = 2
 
 const fragColorPlaneWidth = 200
 const fragColorPlaneHeight = 200
-const fragColorPlaneSegments = 10//mapPlaneSegments//mapPlaneSegments
+const fragColorPlaneSegments = 1000//mapPlaneSegments//mapPlaneSegments
 
 const fragColorPlaneDisplacementScale = 30
 const textureScaleZ = 0.6
 
-const grassCount = 300000
+const grassCount = 500000
 
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
@@ -128,61 +128,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		console.log(scene, renderer);
 
 
-		////////////////// MAP GEOMETRY ////////////
-
 		
-
-        
-
-        const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
-        const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff,
-            map:map,
-            //wireframe: true,
-            displacementMap: displacement,
-            displacementScale: mapPlaneDisplacementScale,
-        })
-
-        // const uniforms = {
-        // 	uDisplacementMap: { value: displacement },
-        //     uDisplacementScale: { value: 1.0 },
-        //     uTime: { value: 0.0 },
-        // }
-
-     //    mapPlaneMaterial = new CustomShaderMaterial({
-	    //     baseMaterial: baseMaterial,
-	    //     vertexShader: shaderV,
-	    //     fragmentShader: shaderF,
-	    //     uniforms: uniforms,
-	    //     onBeforeCompile: (shader) => {console.log({shader})}
-	    // });
-
-	    // riverMaterial = new THREE.MeshStandardMaterial({ 
-     //        color: 0x00ffff, //Red
-     //    })
-
-	    riverMaterial = new THREE.ShaderMaterial({
-	    	uniforms: THREE.UniformsUtils.merge( [
-				THREE.UniformsLib[ 'fog' ], {
-					uTime: {value: 0.0}
-				}
-      		]),
-	    	vertexShader: waterV,
-	    	fragmentShader: waterF,
-	        fog: true,
-	    })
-
-	    mapPlane = new THREE.Mesh(mapPlaneGeometry, mapPlaneMaterial)
-	    riverPlane = new THREE.Mesh(new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, riverPlaneSegments, riverPlaneSegments), riverMaterial)
-
-        mapPlane.rotation.x = -Math.PI / 2
-        riverPlane.rotation.x = -Math.PI / 2
-
-        mapPlane.position.y = 0.1
-        riverPlane.position.y = 2
-
-        scene.add(mapPlane)
-        scene.add(riverPlane)
 
         /// UPDATE VERTEX HEIGHT ////
 
@@ -303,6 +249,64 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
 renderer.toneMapping = THREE.ReinhardToneMapping;
 renderer.toneMappingExposure = 1.2;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+
+////////////////// MAP GEOMETRY ////////////
+
+		
+
+        
+
+        const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
+        const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
+            color: "#ffffff",//"#339966",
+            //map:map,
+            //wireframe: true,
+            displacementMap: displacement,
+            displacementScale: mapPlaneDisplacementScale,
+            //displacementBias: 1
+        })
+
+        // const uniforms = {
+        // 	uDisplacementMap: { value: displacement },
+        //     uDisplacementScale: { value: 1.0 },
+        //     uTime: { value: 0.0 },
+        // }
+
+     //    mapPlaneMaterial = new CustomShaderMaterial({
+	    //     baseMaterial: baseMaterial,
+	    //     vertexShader: shaderV,
+	    //     fragmentShader: shaderF,
+	    //     uniforms: uniforms,
+	    //     onBeforeCompile: (shader) => {console.log({shader})}
+	    // });
+
+	    // riverMaterial = new THREE.MeshStandardMaterial({ 
+     //        color: 0x00ffff, //Red
+     //    })
+
+	    riverMaterial = new THREE.ShaderMaterial({
+	    	uniforms: THREE.UniformsUtils.merge( [
+				THREE.UniformsLib[ 'fog' ], {
+					uTime: {value: 0.0}
+				}
+      		]),
+	    	vertexShader: waterV,
+	    	fragmentShader: waterF,
+	        fog: true,
+	    })
+
+	    mapPlane = new THREE.Mesh(mapPlaneGeometry, mapPlaneMaterial)
+	    riverPlane = new THREE.Mesh(new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, riverPlaneSegments, riverPlaneSegments), riverMaterial)
+
+        mapPlane.rotation.x = -Math.PI / 2
+        riverPlane.rotation.x = -Math.PI / 2
+
+        mapPlane.position.y = 0.1
+        riverPlane.position.y = 2
+
+        scene.add(mapPlane)
+        scene.add(riverPlane)
 
 ///////// GPGPU ///////////////
 
@@ -805,12 +809,16 @@ const stats = {
 	triangles: 0,
 	geometries: 0,
 	textures: 0,
+	color: "#ffffff"
 }
 
 gui.add(stats, 'renderCalls').name('Render Calls').listen()
 gui.add(stats, 'triangles').name('Triangles').listen()
 gui.add(stats, 'geometries').name('Geometries').listen()
 gui.add(stats, 'textures').name('Textures').listen()
+gui.addColor(stats, 'color').name('landColor').onChange((value) => {
+    mapPlaneMaterial.color.set(value)
+})
 
 
 
