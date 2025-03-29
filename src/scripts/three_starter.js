@@ -102,13 +102,14 @@ class InstancedFloat16BufferAttribute extends THREE.InstancedBufferAttribute {
 };
 
 const textureLoader = new THREE.TextureLoader()
-const displacement = textureLoader.load('./3d/map2.jpg')
-const map = textureLoader.load('./3d/tex.png')
+//const displacement = textureLoader.load('./3d/map2.jpg')
+const displacement = textureLoader.load('./3d/lod.png')
+const map = textureLoader.load('./3d/tex2.jpg')
 
 const mapPlaneWidth = 200
 const mapPlaneHeight = 200
 const mapPlaneSegments = 400
-const mapPlaneDisplacementScale = 30
+const mapPlaneDisplacementScale = 20
 const riverPlaneSegments = 2
 
 const fragColorPlaneWidth = 200
@@ -116,9 +117,9 @@ const fragColorPlaneHeight = 200
 const fragColorPlaneSegments = 1000//mapPlaneSegments//mapPlaneSegments
 
 const fragColorPlaneDisplacementScale = 30
-const textureScaleZ = 0.6
+const textureScaleZ = 0.4//0.6
 
-const grassCount = 500000
+const grassCount = 400000
 
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
@@ -259,8 +260,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
         const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
-            color: "#ffffff",//"#339966",
-            //map:map,
+            //color: "#ffffff",//"#339966",
+            map:map,
             //wireframe: true,
             displacementMap: displacement,
             displacementScale: mapPlaneDisplacementScale,
@@ -652,6 +653,31 @@ setTimeout(() => {
 
 	console.log({grassGeometry})
 
+	const grassUvsLow = new Float32Array([
+		// Первый треугольник
+		0, 0,    // vertex 0
+		1, 0.33, // vertex 1
+		1, 0,    // vertex 2
+		// Второй треугольник
+		0, 0,    // vertex 3
+		1, 0.33, // vertex 4
+		0, 0.33, // vertex 5
+		// Третий треугольник
+		0, 0.33, // vertex 6
+		1, 0.66, // vertex 7
+		1, 0.33, // vertex 8
+		// Четвертый треугольник
+		0, 0.33, // vertex 9
+		1, 0.66, // vertex 10
+		0, 0.66, // vertex 11
+		// Пятый треугольник
+		0, 0.66, // vertex 12
+		0.5, 1,  // vertex 13
+		1, 0.66, // vertex 14
+	])
+
+
+
 		// for (let i = 0; i < positions.length; i += 3) {
 
 		//   // Преобразуем локальные координаты в мировые
@@ -684,7 +710,7 @@ setTimeout(() => {
 
 	//const count = grassCount * grassCount
 
-	const grassMaterial = new THREE.MeshStandardMaterial({color: "green", side: THREE.DoubleSide})
+	const grassMaterial = new THREE.MeshBasicMaterial({color: "green", side: THREE.DoubleSide})
 
 	grassMaterial.onBeforeCompile = (shader) => {
 		shader.vertexShader = shader.vertexShader.replace(
@@ -714,19 +740,19 @@ setTimeout(() => {
 			vec3 baseColor = vec3(0.2, 0.6, 0.3);
 			vec3 tipColor = vec3(0.4, 0.9, 0.5);
 			float gradient = smoothstep(0.3, 0.8, vUv.y);
-
-			//vec3 clr = mix(baseColor, tipColor, vUv.x);
 			vec3 clr = mix(baseColor, tipColor, vUv.y);
 			vec3 clr2 = mix(baseColor, tipColor, vUv.x);
 
 			diffuseColor = vec4(clr , 1.0);
+			//diffuseColor = vec4(1.0, 0.0, 0.0,1.0);
 		`
 		)
 		// Обновляем шейдер материала
 		grassMaterial.userData.shader = shader
 	}
 
-	const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
+	//const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
+	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
 
 	const planeByTextureVerticesVectors = []
 	const planeByTextureVertexsPositions = planeByTextureGeometry.attributes.position.array
@@ -737,54 +763,99 @@ setTimeout(() => {
 
 	console.warn(planeByTextureVerticesVectors)
 
-	const prevRandoms = []
+	//const prevRandoms = []
+	const prevRandoms = new Set();
 	let lostedGrass = 0
 
-	const getRandomVector = () => Math.round(Math.random() * (planeByTextureVerticesVectors.length - 1))
+	// const getRandomVector = () => Math.round(Math.random() * (planeByTextureVerticesVectors.length - 1))
 
-	const getUnicRandom = (random) => {
-		if(prevRandoms.includes(random)){
-			getUnicRandom(getRandomVector())
-		}else{
-			return random
-			prevRandoms.push(random)
-		}
-	}
+	// const getUnicRandom = (random) => {
+	// 	if(prevRandoms.includes(random)){
+	// 		getUnicRandom(getRandomVector())
+	// 	}else{
+	// 		return random
+	// 		prevRandoms.push(random)
+	// 	}
+	// }
 
-	grasses.addInstances(grassCount, (obj, index) => {
-		// obj.position.x = 10 * (Math.random() * 2 - 1);
-		// obj.position.z = 10 * (Math.random() * 2 - 1);
+	const dummy = new THREE.Object3D();
 
-		const random = getUnicRandom(getRandomVector())
+	for (let i = 0; i < grassCount; i++) {
+		let random
+	    do {
+	        random = Math.floor(Math.random() * planeByTextureVerticesVectors.length)
+	    } while (prevRandoms.has(random))
 
-		if(prevRandoms.includes(random)) lostedGrass++
-
-		//prevRandoms.push(random)
-
-		//console.log(planeByTextureVerticesVectors.length, random)
-
-
+	    prevRandoms.add(random)
 
 		const randomVertexVector = planeByTextureVerticesVectors[random]
 
 		//console.log({ps})
 		//if(randomVertexVector ){ // && randomVertexVector.z > 3
-			obj.position.x = randomVertexVector.x + Math.random() * 0.8 
-		 	obj.position.z = randomVertexVector.y + Math.random() * 0.8 
-			obj.position.y = randomVertexVector.z
+			// obj.position.x = randomVertexVector.x + Math.random() * 0.8 
+		 // 	obj.position.z = randomVertexVector.y + Math.random() * 0.8 
+			// obj.position.y = randomVertexVector.z
+
+			dummy.position.set(randomVertexVector.x + Math.random() * 0.8 , randomVertexVector.z, randomVertexVector.y + Math.random() * 0.8 );
+		    dummy.rotation.y = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
+		    dummy.updateMatrix();
+		    grasses.setMatrixAt(i, dummy.matrix);
 			// obj.scale.y = 10
 			// obj.scale.x = 10
 			// obj.scale.z = 10
 
 			//obj.rotateY = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
 
-		 	const quaternion = new THREE.Quaternion()
-			quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ),  Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5))
-			obj.quaternion = quaternion
-			obj.updateMatrix()
-			grasses.setMatrixAt(index, obj.matrix)
-		//}
-	})
+		 // const quaternion = new THREE.Quaternion()
+			// quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ),  Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5))
+			// obj.quaternion = quaternion
+			// obj.updateMatrix()
+			// grasses.setMatrixAt(index, obj.matrix)
+	}
+
+	// grasses.addInstances(grassCount, (obj, index) => {
+	// 	// obj.position.x = 10 * (Math.random() * 2 - 1);
+	// 	// obj.position.z = 10 * (Math.random() * 2 - 1);
+
+	// 	//const random = getUnicRandom(getRandomVector())
+	// 	let random
+	//     do {
+	//         random = Math.floor(Math.random() * planeByTextureVerticesVectors.length)
+	//     } while (prevRandoms.has(random))
+
+	//     prevRandoms.add(random)
+
+	// 	//if(prevRandoms.includes(random)) lostedGrass++
+
+	// 	//prevRandoms.push(random)
+
+	// 	//console.log(planeByTextureVerticesVectors.length, random)
+
+
+
+	// 	const randomVertexVector = planeByTextureVerticesVectors[random]
+
+	// 	//console.log({ps})
+	// 	//if(randomVertexVector ){ // && randomVertexVector.z > 3
+	// 		obj.position.x = randomVertexVector.x + Math.random() * 0.8 
+	// 	 	obj.position.z = randomVertexVector.y + Math.random() * 0.8 
+	// 		obj.position.y = randomVertexVector.z
+	// 		// obj.scale.y = 10
+	// 		// obj.scale.x = 10
+	// 		// obj.scale.z = 10
+
+	// 		//obj.rotateY = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
+
+	// 	 	const quaternion = new THREE.Quaternion()
+	// 		quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ),  Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5))
+	// 		obj.quaternion = quaternion
+	// 		obj.updateMatrix()
+	// 		grasses.setMatrixAt(index, obj.matrix)
+	// 	//}
+	// })
+
+	// grasses.addLOD(new THREE.BoxGeometry(1,1,1), grassMaterial, 10); // high
+	// grasses.addLOD(grassGeometry, grassMaterial, 100);
 
 	console.log({lostedGrass})
 
