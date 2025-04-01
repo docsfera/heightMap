@@ -1,5 +1,6 @@
 import './debug_gui.js';
 import * as THREE from "three";
+//THREE.PlaneBufferGeometry = THREE.PlaneGeometry
 import { loader } from "./loader.js";
 import { onResize } from "./resize.js";
 import { initRaycaster } from "./raycaster.js";
@@ -9,7 +10,7 @@ import { materials } from "./materials.js";
 import { sceneHandler } from "./scene.js";
 import { clippingPlanes } from "./clipping_planes.js";
 import * as Camera from "./Camera.js";
-import { EffectComposer, RenderPass } from "postprocessing";
+//import { EffectComposer, RenderPass } from "postprocessing";
 import { EffectPass } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
 import { proceduralEnvironmentHandler } from './procedural_envmap.js';
@@ -17,6 +18,7 @@ import { proceduralEnvironmentHandler } from './procedural_envmap.js';
 import Stats from 'stats-js'
 
 //import { RenderPass, EffectComposer, OutlinePass } from "three-outlinepass"
+//import "./OutlinePass.js"
 
 import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 //import { GPUComputationRenderer } from 'gpucomputationrender-three';
@@ -33,10 +35,22 @@ import landV from './shaders/gpgpu/landV.glsl'
 import vv from './shaders/gpgpu/vv.glsl'
 import gpgpuParticlesShader from './shaders/gpgpu/particles.glsl'
 
+
+import { Pass } from "three/examples/jsm/postprocessing/Pass.js";
+import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
+
+import { CustomOutlinePass } from "./CustomOutlinePass.js";
+import FindSurfaces from "./FindSurfaces.js";
+
 const container3D = document.querySelector(".d3d-container");
 const foreground = document.querySelector(".foreground");
 
-let composer, renderPass, n8aopass;
+let composer
+//let composer, renderPass, n8aopass;
 const renderer = new THREE.WebGLRenderer({
 	antialias: true,
 	outputColorSpace: THREE.SRGBColorSpace,
@@ -68,8 +82,8 @@ bgFolder.add(scene.fog, 'far');
 let activeCamera;
 scene.setActiveCamera = (camera) => {
 	activeCamera = camera;
-	renderPass.camera = activeCamera;
-	n8aopass.camera = activeCamera;
+	// renderPass.camera = activeCamera;
+	// n8aopass.camera = activeCamera;
 
 	onResize(scene.activeRenderer, activeCamera, container3D);
 	onResize(annRenderer, activeCamera, container3D);
@@ -182,7 +196,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		/////////////////////
 
-		scene.getObjectByName("suzanne").visible = false
+		scene.getObjectByName("suzanne").visible = true
 		scene.getObjectByName("curve").visible = false
 		scene.getObjectByName("cube").visible = false
 		scene.getObjectByName("sphere").visible = false
@@ -190,11 +204,17 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		scene.getObjectByName("floor").visible = false
 
 
+		
+
+
+
+
+
 		/////////////////////
 
 		
 		//Init block
-		proceduralEnvironmentHandler.init(scene, renderer);
+		proceduralEnvironmentHandler.init(scene, renderer); // нет тени из-заэ того
 		animations.initHandler(scene);
 		activeCamera = new Camera.Perspective(canvas);
 		initRaycaster(scene, activeCamera);
@@ -206,27 +226,101 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		window.addEventListener("resize", () => onResize(scene.activeRenderer, activeCamera, container3D));
 		window.addEventListener("resize", () => onResize(annRenderer, activeCamera, container3D));
 		
-		composer = new EffectComposer( renderer, {multisampling: 8, stencilBuffer: true} );
-		renderPass = new RenderPass( scene, activeCamera )
-		n8aopass = new N8AOPostPass(
-			scene,
-			activeCamera,
-			container3D.offsetWidth, 
-			container3D.offsetHeight
-		);
-		const aoFolder = gui.addFolder('AO');
-		n8aopass.configuration.aoRadius = 2.0; 						aoFolder.add(n8aopass.configuration, 'aoRadius');
-		n8aopass.configuration.distanceFalloff = 1.0; 				aoFolder.add(n8aopass.configuration, 'distanceFalloff');
-		n8aopass.configuration.intensity = 4.0; 					aoFolder.add(n8aopass.configuration, 'intensity');
-		n8aopass.configuration.halfRes = false; 					aoFolder.add(n8aopass.configuration, 'halfRes');
-		n8aopass.configuration.accumulate = false; 					aoFolder.add(n8aopass.configuration, 'accumulate');
-		n8aopass.configuration.color = new THREE.Color(0x000000); 	aoFolder.addColor(n8aopass.configuration, 'color').onFinishChange((event) => console.log(event.getHexString()));
-		n8aopass.setQualityMode("Low"); 
+		
+		// renderPass = new RenderPass( scene, activeCamera )
+		// n8aopass = new N8AOPostPass(
+		// 	scene,
+		// 	activeCamera,
+		// 	container3D.offsetWidth, 
+		// 	container3D.offsetHeight
+		// );
+		// const aoFolder = gui.addFolder('AO');
+		// n8aopass.configuration.aoRadius = 2.0; 						aoFolder.add(n8aopass.configuration, 'aoRadius');
+		// n8aopass.configuration.distanceFalloff = 1.0; 				aoFolder.add(n8aopass.configuration, 'distanceFalloff');
+		// n8aopass.configuration.intensity = 4.0; 					aoFolder.add(n8aopass.configuration, 'intensity');
+		// n8aopass.configuration.halfRes = false; 					aoFolder.add(n8aopass.configuration, 'halfRes');
+		// n8aopass.configuration.accumulate = false; 					aoFolder.add(n8aopass.configuration, 'accumulate');
+		// n8aopass.configuration.color = new THREE.Color(0x000000); 	aoFolder.addColor(n8aopass.configuration, 'color').onFinishChange((event) => console.log(event.getHexString()));
+		// n8aopass.setQualityMode("Low"); 
 	
-		composer.addPass(renderPass);
-		composer.addPass(n8aopass);
-		scene.composer = composer;
-		gui.add(scene, 'activeRenderer', {renderer: scene.renderer, composer: scene.composer});
+		// composer.addPass(renderPass);
+		// composer.addPass(n8aopass);
+		// scene.composer = composer;
+		// gui.add(scene, 'activeRenderer', {renderer: scene.renderer, composer: scene.composer});
+
+
+
+		//////// COMPOSER /////////
+		// Initial render pass.
+
+		const testCube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({color: "blue"}))
+		scene.add(testCube)
+		testCube.scale.set(0.1, 0.1, 0.1)
+		testCube.position.z = -0.14
+
+		const depthTexture = new THREE.DepthTexture();
+		const renderTarget1 = new THREE.WebGLRenderTarget(
+		  window.innerWidth,
+		  window.innerHeight,
+		  {
+		    depthTexture: depthTexture,
+		    depthBuffer: true,
+		  }
+		);
+
+		composer = new EffectComposer(renderer, renderTarget1);
+		const pass = new RenderPass(scene, activeCamera);
+		composer.addPass(pass);
+
+		console.log({activeCamera})
+
+		// Outline pass.
+		const customOutline = new CustomOutlinePass(
+		  new THREE.Vector2(window.innerWidth, window.innerHeight),
+		  scene,
+		  activeCamera
+		);
+		composer.addPass(customOutline);
+
+		// Antialias pass.
+		const effectFXAA = new ShaderPass(FXAAShader);
+		effectFXAA.uniforms["resolution"].value.set(
+		  1 / window.innerWidth,
+		  1 / window.innerHeight
+		);
+		composer.addPass(effectFXAA);
+
+		const surfaceFinder = new FindSurfaces();
+
+		surfaceFinder.surfaceId = 0;
+
+		
+
+		const colorsTypedArray = surfaceFinder.getSurfaceIdAttribute(testCube);
+		console.log({colorsTypedArray})
+	 //      scene.getObjectByName("suzanne").geometry.setAttribute(
+	 //        "color",
+	 //        new THREE.BufferAttribute(colorsTypedArray, 4)
+	 //      );
+
+	 //     customOutline.updateMaxSurfaceId(surfaceFinder.surfaceId + 1);
+
+	 testCube.geometry.setAttribute(
+	         "color",
+	         new THREE.BufferAttribute(colorsTypedArray, 4)
+	       );
+
+	      customOutline.updateMaxSurfaceId(surfaceFinder.surfaceId + 1);
+
+	      console.log({g: testCube.geometry})
+
+
+	      
+
+
+
+
+	     ////////////////////////////////////////////
 		
 		sceneHandler.init(scene);
 		
@@ -247,9 +341,9 @@ scene.add(light);
 // Заполняющий свет
 scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
 
-renderer.toneMapping = THREE.ReinhardToneMapping;
-renderer.toneMappingExposure = 1.2;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// renderer.toneMapping = THREE.ReinhardToneMapping;
+// renderer.toneMappingExposure = 1.2;
+// renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 
 ////////////////// MAP GEOMETRY ////////////
@@ -763,20 +857,9 @@ setTimeout(() => {
 
 	console.warn(planeByTextureVerticesVectors)
 
-	//const prevRandoms = []
-	const prevRandoms = new Set();
 	let lostedGrass = 0
-
-	// const getRandomVector = () => Math.round(Math.random() * (planeByTextureVerticesVectors.length - 1))
-
-	// const getUnicRandom = (random) => {
-	// 	if(prevRandoms.includes(random)){
-	// 		getUnicRandom(getRandomVector())
-	// 	}else{
-	// 		return random
-	// 		prevRandoms.push(random)
-	// 	}
-	// }
+	const prevRandoms = new Set();
+	
 
 	const dummy = new THREE.Object3D();
 
@@ -790,27 +873,10 @@ setTimeout(() => {
 
 		const randomVertexVector = planeByTextureVerticesVectors[random]
 
-		//console.log({ps})
-		//if(randomVertexVector ){ // && randomVertexVector.z > 3
-			// obj.position.x = randomVertexVector.x + Math.random() * 0.8 
-		 // 	obj.position.z = randomVertexVector.y + Math.random() * 0.8 
-			// obj.position.y = randomVertexVector.z
-
-			dummy.position.set(randomVertexVector.x + Math.random() * 0.8 , randomVertexVector.z, randomVertexVector.y + Math.random() * 0.8 );
-		    dummy.rotation.y = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
-		    dummy.updateMatrix();
-		    grasses.setMatrixAt(i, dummy.matrix);
-			// obj.scale.y = 10
-			// obj.scale.x = 10
-			// obj.scale.z = 10
-
-			//obj.rotateY = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
-
-		 // const quaternion = new THREE.Quaternion()
-			// quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ),  Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5))
-			// obj.quaternion = quaternion
-			// obj.updateMatrix()
-			// grasses.setMatrixAt(index, obj.matrix)
+		dummy.position.set(randomVertexVector.x + Math.random() * 0.8 , randomVertexVector.z, randomVertexVector.y + Math.random() * 0.8 );
+		dummy.rotation.y = Math.PI / 2 * (Math.round(Math.random()) * 2 - 1) + Math.PI / 2 * (Math.random() - 0.5)
+		dummy.updateMatrix();
+		grasses.setMatrixAt(i, dummy.matrix)
 	}
 
 	// grasses.addInstances(grassCount, (obj, index) => {
@@ -862,6 +928,9 @@ setTimeout(() => {
 	console.log({grassCount})
 	console.log({pvert: planeByTextureVerticesVectors.length})
 
+
+	console.log(grasses)
+
 	grasses.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
 	grasses.instanceMatrix.needsUpdate = true
 
@@ -896,12 +965,19 @@ gui.addColor(stats, 'color').name('landColor').onChange((value) => {
 var stats1 = new Stats();
 document.body.appendChild(stats1.dom)
 
+
+
 function animate() {
 	stats1.begin();
   
 	const deltaTime = clock.getDelta();
 
 	requestAnimationFrame(animate);
+
+	
+
+	//composer.renderer.render();
+ //    controls.update();
 
 	// Очищаем предыдущую статистику
   	renderer.info.reset();
@@ -917,28 +993,16 @@ function animate() {
 	//material.uniforms.uTime.value += 0.01;
 	riverMaterial.uniforms.uTime.value += 0.01;
 
-	// renderer.render(scene, activeCamera);
-	// composer.render();
 
-
-
-	// scene.activeRenderer.render.setRenderTarget(positionRenderTarget);
- //    scene.activeRenderer.render.render(positionScene, positionCamera);
- //    scene.activeRenderer.render.setRenderTarget(null);
-
- //gpgpu.computation.compute()
- //gpgpu1.computation.compute()
- //particles.material.uniforms.uParticlesTexture.value = gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture
-
-	//scene.activeRenderer.render(scene, activeCamera)
 	renderer.setRenderTarget(renderTarget);
 	renderer.render(textureScene, textureCamera)
-	//particles.material.uniforms.uParticlesTexture.value = renderTarget.texture
+	renderer.setRenderTarget(null);
+	renderer.render(scene, activeCamera)
+
+	composer.render();
 
 	
 
-	renderer.setRenderTarget(null);
-	renderer.render(scene, activeCamera)
 
 	// Рендерим позиции в текстуру
     
