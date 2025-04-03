@@ -255,7 +255,6 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		const testCube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({color: "blue"}))
 		scene.add(testCube)
-		testCube.scale.set(0.1, 0.1, 0.1)
 		testCube.position.z = -0.14
 
 		const depthTexture = new THREE.DepthTexture();
@@ -269,6 +268,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		);
 
 		composer = new EffectComposer(renderer, renderTarget1);
+		activeCamera.position.z = 5
 		const pass = new RenderPass(scene, activeCamera);
 		composer.addPass(pass);
 
@@ -315,7 +315,6 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	      console.log({g: testCube.geometry})
 
 
-	      
 
 
 
@@ -984,6 +983,10 @@ function animate() {
 
 	activeCamera.update(deltaTime);
 
+	// Добавить обновление матриц камеры
+  activeCamera.updateProjectionMatrix();
+  activeCamera.updateMatrixWorld(true);
+
 	animations.update(deltaTime);
 
 	clippingPlanes.update();
@@ -994,12 +997,13 @@ function animate() {
 	riverMaterial.uniforms.uTime.value += 0.01;
 
 
-	renderer.setRenderTarget(renderTarget);
-	renderer.render(textureScene, textureCamera)
-	renderer.setRenderTarget(null);
-	renderer.render(scene, activeCamera)
-
+	//renderer.setRenderTarget(renderTarget);
+	//renderer.render(textureScene, textureCamera)
+	//renderer.setRenderTarget(null);
+	//renderer.render(scene, activeCamera)
+	//renderer.setRenderTarget(null);
 	composer.render();
+
 
 	
 
@@ -1007,7 +1011,7 @@ function animate() {
 	// Рендерим позиции в текстуру
     
 
-	annRenderer.render(scene, activeCamera);
+	//annRenderer.render(scene, activeCamera);
 
 
 	stats.renderCalls = renderer.info.render.calls;
