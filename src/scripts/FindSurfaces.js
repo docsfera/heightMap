@@ -131,6 +131,7 @@ export function getSurfaceIdMaterial() {
   return new THREE.ShaderMaterial({
     uniforms: {
       maxSurfaceId: { value: 1 },
+      surfaceId: { value: -1 }
     },
     vertexShader: getVertexShader(),
     fragmentShader: getFragmentShader(),
@@ -166,4 +167,27 @@ function getFragmentShader() {
     gl_FragColor = vec4(surfaceId, 0.0, 0.0, 1.0);
   }
   `;
+}
+
+// For debug rendering, assign a random color
+// to each surfaceId
+export function getDebugSurfaceIdMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: {},
+    vertexShader: getVertexShader(),
+    fragmentShader: `
+  varying vec2 v_uv;
+  varying vec4 vColor;
+
+  void main() {      
+      int surfaceId = int(round(vColor.r) * 100.0);
+      float R = float(surfaceId % 255) / 255.0;
+      float G = float((surfaceId + 50) % 255) / 255.0;
+      float B = float((surfaceId * 20) % 255) / 255.0;
+
+      gl_FragColor = vec4(R, G, B, 1.0);
+  }
+  `,
+    vertexColors: true,
+  });
 }

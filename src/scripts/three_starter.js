@@ -1,5 +1,6 @@
 import './debug_gui.js';
 import * as THREE from "three";
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 //THREE.PlaneBufferGeometry = THREE.PlaneGeometry
 import { loader } from "./loader.js";
 import { onResize } from "./resize.js";
@@ -42,6 +43,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
+import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 
 import { CustomOutlinePass } from "./CustomOutlinePass.js";
 import FindSurfaces from "./FindSurfaces.js";
@@ -50,6 +52,7 @@ const container3D = document.querySelector(".d3d-container");
 const foreground = document.querySelector(".foreground");
 
 let composer
+let controls
 //let composer, renderPass, n8aopass;
 const renderer = new THREE.WebGLRenderer({
 	antialias: true,
@@ -217,6 +220,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		proceduralEnvironmentHandler.init(scene, renderer); // нет тени из-заэ того
 		animations.initHandler(scene);
 		activeCamera = new Camera.Perspective(canvas);
+		controls = new OrbitControls(activeCamera, renderer.domElement)
 		initRaycaster(scene, activeCamera);
 		clippingPlanes.init(scene);
 		
@@ -255,7 +259,8 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 		const testCube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({color: "blue"}))
 		scene.add(testCube)
-		testCube.position.z = -0.14
+		testCube.position.z = 4
+		testCube.position.y = 20
 
 		const depthTexture = new THREE.DepthTexture();
 		const renderTarget1 = new THREE.WebGLRenderTarget(
@@ -270,12 +275,13 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		composer = new EffectComposer(renderer, renderTarget1);
 		activeCamera.position.z = 5
 		const pass = new RenderPass(scene, activeCamera);
+		pass.camera = activeCamera
 		composer.addPass(pass);
 
 		console.log({activeCamera})
 
 		// Outline pass.
-		const customOutline = new CustomOutlinePass(
+		const customOutline = new OutlinePass(
 		  new THREE.Vector2(window.innerWidth, window.innerHeight),
 		  scene,
 		  activeCamera
@@ -290,29 +296,42 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		);
 		composer.addPass(effectFXAA);
 
-		const surfaceFinder = new FindSurfaces();
+		// const surfaceFinder = new FindSurfaces();
 
-		surfaceFinder.surfaceId = 0;
+		// surfaceFinder.surfaceId = 0;
 
 		
 
-		const colorsTypedArray = surfaceFinder.getSurfaceIdAttribute(testCube);
-		console.log({colorsTypedArray})
-	 //      scene.getObjectByName("suzanne").geometry.setAttribute(
+		// const colorsTypedArray = surfaceFinder.getSurfaceIdAttribute(testCube);
+		// console.log({colorsTypedArray})
+	 // //      scene.getObjectByName("suzanne").geometry.setAttribute(
+	 // //        "color",
+	 // //        new THREE.BufferAttribute(colorsTypedArray, 4)
+	 // //      );
+
+	 // //     customOutline.updateMaxSurfaceId(surfaceFinder.surfaceId + 1);
+
+		// testCube.geometry.setAttribute(
 	 //        "color",
 	 //        new THREE.BufferAttribute(colorsTypedArray, 4)
-	 //      );
+	 //    )
 
-	 //     customOutline.updateMaxSurfaceId(surfaceFinder.surfaceId + 1);
+	 //    customOutline.updateMaxSurfaceId(1)
 
-	 testCube.geometry.setAttribute(
-	         "color",
-	         new THREE.BufferAttribute(colorsTypedArray, 4)
-	       );
+	 //    console.log({g: testCube.geometry})
 
-	      customOutline.updateMaxSurfaceId(surfaceFinder.surfaceId + 1);
+	 //    // customOutline.selectedObjects = [testCube]
+	 //    // pass.selectedObjects = [testCube]
 
-	      console.log({g: testCube.geometry})
+	 //    console.log({customOutline})
+
+
+	 customOutline.selectedObjects = [testCube]
+
+	 // 	testCube.layers.set(1);
+		// // Настройте камеру и пасс для рендера этого слоя:
+		// activeCamera.layers.set(1);
+		// customOutline.renderToScreen = true;
 
 
 
@@ -321,12 +340,12 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 	     ////////////////////////////////////////////
 		
-		sceneHandler.init(scene);
+		sceneHandler.init(scene)
 		
-		resolve();
+		resolve()
 		
-		animate();
-		animations.fadeIn();
+		animate()
+		animations.fadeIn()
 	});
 });
 
@@ -966,6 +985,7 @@ document.body.appendChild(stats1.dom)
 
 
 
+
 function animate() {
 	stats1.begin();
   
@@ -976,12 +996,13 @@ function animate() {
 	
 
 	//composer.renderer.render();
- //    controls.update();
+     //controls.update();
+     activeCamera.update(deltaTime);
 
 	// Очищаем предыдущую статистику
   	renderer.info.reset();
 
-	activeCamera.update(deltaTime);
+	
 
 	// Добавить обновление матриц камеры
   activeCamera.updateProjectionMatrix();
@@ -997,12 +1018,17 @@ function animate() {
 	riverMaterial.uniforms.uTime.value += 0.01;
 
 
-	//renderer.setRenderTarget(renderTarget);
-	//renderer.render(textureScene, textureCamera)
-	//renderer.setRenderTarget(null);
-	//renderer.render(scene, activeCamera)
-	//renderer.setRenderTarget(null);
-	composer.render();
+	renderer.setRenderTarget(renderTarget);
+	renderer.render(textureScene, textureCamera)
+	renderer.setRenderTarget(null);
+	renderer.render(scene, activeCamera)
+	renderer.setRenderTarget(null);
+	//composer.render();
+
+
+
+
+
 
 
 	
