@@ -207,6 +207,16 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		scene.getObjectByName("floor").visible = false
 
 
+		loader.loadGLTF("./3d/untitled.gltf", async (gltf) => {
+			const table = gltf.scene
+			console.log({table})
+			scene.add(table)
+			table.position.y = 19.5
+			table.scale.set(5,5,5)
+
+		})
+
+
 		
 
 
@@ -372,7 +382,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
 
         const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
         const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
-            //color: "#ffffff",//"#339966",
+            color: "#68ac89",//"#339966",
             map:map,
             //wireframe: true,
             displacementMap: displacement,
@@ -967,7 +977,7 @@ const stats = {
 	triangles: 0,
 	geometries: 0,
 	textures: 0,
-	color: "#ffffff"
+	color: "#68ac89"
 }
 
 gui.add(stats, 'renderCalls').name('Render Calls').listen()
