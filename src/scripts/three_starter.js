@@ -211,8 +211,36 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			const table = gltf.scene
 			console.log({table})
 			scene.add(table)
+			table.traverse(_ => {
+				if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
+			})
 			table.position.y = 19.5
 			table.scale.set(5,5,5)
+
+		})
+
+		loader.loadGLTF("./3d/rocks.gltf", async (gltf) => {
+			const rocks = gltf.scene
+			console.log({rocks})
+			scene.add(rocks)
+			// rocks.traverse(_ => {
+			// 	if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
+			// })
+			rocks.position.y = 15.5
+			rocks.position.x = 35
+			rocks.scale.set(3,3,3)
+
+		})
+		loader.loadGLTF("./3d/chair.gltf", async (gltf) => {
+			const chair = gltf.scene
+			console.log({chair})
+			scene.add(chair)
+			chair.traverse(_ => {
+				if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
+			})
+			chair.position.y = 19
+			chair.position.x = 6
+			chair.scale.set(6,6,6)
 
 		})
 
