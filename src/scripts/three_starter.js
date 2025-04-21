@@ -243,6 +243,53 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			chair.scale.set(6,6,6)
 
 		})
+		loader.loadGLTF("./3d/wf.gltf", async (gltf) => {
+			const wf = gltf.scene
+			console.log({wf})
+			scene.add(wf)
+			wf.position.y = 15.5
+			wf.position.x = -14
+			wf.position.z = -14
+			//wf.scale.set(0.015,0.015,0.015)
+			wf.scale.set(0.03,0.03,0.03)
+
+			const copy = wf.clone()
+			copy.position.x = -14
+			copy.position.z = -14
+			copy.rotation.y = Math.PI / 3
+			scene.add(copy)
+
+
+			// for (let i = 0; i < 400; i++) {
+			// 	const copy = wf.clone()
+			// 	copy.position.x = (Math.random() - 0.5) * 200
+			// 	copy.position.z = (Math.random() - 0.5) * 200
+			// 	scene.add(copy)
+			// }
+
+		})
+
+		loader.loadGLTF("./3d/wf2.gltf", async (gltf) => {
+			const wf2 = gltf.scene
+			console.log({wf2})
+			scene.add(wf2)
+			wf2.position.y = 15.5
+			wf2.position.x = -8
+			wf2.position.z = -14
+			//wf.scale.set(0.015,0.015,0.015)
+			wf2.scale.set(5,5,5)
+		})
+
+		loader.loadGLTF("./3d/pers.gltf", async (gltf) => {
+			const pers = gltf.scene
+			console.log({pers})
+			scene.add(pers)
+			pers.position.y = 15.5
+			pers.position.x = -8
+			pers.position.z = -14
+			//wf.scale.set(0.015,0.015,0.015)
+			pers.scale.set(4,4,4)
+		})
 
 
 		
