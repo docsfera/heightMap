@@ -122,6 +122,11 @@ const textureLoader = new THREE.TextureLoader()
 //const displacement = textureLoader.load('./3d/map2.jpg')
 const displacement = textureLoader.load('./3d/lod.png')
 const map = textureLoader.load('./3d/tex2.jpg')
+const sand = textureLoader.load('./3d/sand.png')
+sand.wrapS = THREE.RepeatWrapping;
+sand.wrapT = THREE.RepeatWrapping;
+sand.repeat.set(10, 10); // Масштаб текстуры
+const mask = textureLoader.load('./3d/mask.png')
 
 const mapPlaneWidth = 200
 const mapPlaneHeight = 200
@@ -436,10 +441,10 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 const clock = new THREE.Clock();
 
-const light = new THREE.DirectionalLight(0xfff0dd, 9);
-light.position.set(10, 20, 10);
-light.castShadow = true;
-scene.add(light);
+// const light = new THREE.DirectionalLight(0xfff0dd, 1);
+// light.position.set(10, 20, 10);
+// light.castShadow = true;
+// scene.add(light);
 
 // Заполняющий свет
 scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
@@ -457,13 +462,73 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
 
         const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
         const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
-            color: "#68ac89",//"#339966",
-            map:map,
+            //color: "#68ac89",//"#339966",
+            map:sand,
             //wireframe: true,
             displacementMap: displacement,
             displacementScale: mapPlaneDisplacementScale,
             //displacementBias: 1
         })
+
+        console.warn(mapPlaneMaterial)
+
+        mapPlaneMaterial.onBeforeCompile = (shader) => {
+    // Добавляем uniforms
+    shader.uniforms.pathMask = { value: mask };
+    shader.uniforms.pathTexture = { value: sand };
+    
+    // Вершинный шейдер
+    shader.vertexShader = shader.vertexShader.replace(
+       "#include <common>",
+        `
+            #include <common>
+            varying vec2 vUv;
+            varying vec2 vTerrainUV; // UV для маски
+            uniform sampler2D pathMask;
+        `
+    );
+    
+    shader.vertexShader = shader.vertexShader.replace(
+        "#include <uv_vertex>",
+        `
+        	vUv = uv;
+            // UV для маски (повторение как у основной текстуры)
+            vTerrainUV = uv * 10.0;
+            #include <uv_vertex>
+        `
+    );
+
+    // Фрагментный шейдер
+    shader.fragmentShader = `
+        varying vec2 vUv;
+        varying vec2 vTerrainUV;
+        uniform sampler2D pathMask;
+        uniform sampler2D pathTexture;
+    ` + shader.fragmentShader;
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <map_fragment>",
+        `
+        // Основной цвет текстуры
+        vec4 baseColor = texture2D(map, vUv);
+        
+        // Цвет тропинки
+        vec4 pathColor = texture2D(pathTexture, vTerrainUV);
+        
+        // Значение маски (инвертируем для тропинки)
+        float maskValue = texture2D(pathMask, vec2(vUv.x, 1.0 - vUv.y)).g;
+        
+        // Смешивание с плавным переходом
+        float mixFactor = smoothstep(0.3, 0.7, 1.0 - maskValue);
+        vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(0.0, 1.0, 0.0, 1.0), mixFactor);
+        //vec4 finalColor = mix(vec4(0.2, 0.2, 0.2, 1.0), vec4(1.0, 0.0, 0.0, 1.0), mixFactor);
+        
+        diffuseColor *= finalColor;
+        `
+    );
+    
+    mapPlaneMaterial.userData.shader = shader;
+};
 
         // const uniforms = {
         // 	uDisplacementMap: { value: displacement },
@@ -910,43 +975,58 @@ setTimeout(() => {
 	const grassMaterial = new THREE.MeshBasicMaterial({color: "green", side: THREE.DoubleSide})
 
 	grassMaterial.onBeforeCompile = (shader) => {
-		shader.vertexShader = shader.vertexShader.replace(
-			"#include <common>",
-			`
-			    #include <common>
-			    varying vec2 vUv; // Добавляем после include <common>
-			`
-		)
-		// 2. Передаем UV-координаты из атрибута в varying
-		shader.vertexShader = shader.vertexShader.replace(
-			"#include <uv_vertex>",
-			`
-			    vUv = uv; // Сохраняем UV во varying переменную
-			    #include <uv_vertex>
-			`
-		)
-		// 3. Добавляем varying во фрагментный шейдер
-		shader.fragmentShader = `
-			varying vec2 vUv; // Объявляем во фрагментном шейдере
-		` + shader.fragmentShader
+    // Добавляем uniform для маски
+    shader.uniforms.pathMask = { value: mask };
+    
+    shader.vertexShader = shader.vertexShader.replace(
+        "#include <common>",
+        `
+            #include <common>
+            varying vec2 vUv;
+            varying vec2 vTerrainUV; // UV для маски
+            uniform sampler2D pathMask;
+        `
+    )
+    
+    shader.vertexShader = shader.vertexShader.replace(
+        "#include <uv_vertex>",
+        `
+            vUv = uv;
+            
+            // Рассчитываем UV маски на основе мировых координат
+            vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
+            vTerrainUV = (worldPosition.xz + vec2(100.0)) / 200.0; // Для плоскости 200x200 ////////////////////////////////////////// 200!!!!! TODO
+            
+            #include <uv_vertex>
+        `
+    )
+    
+    shader.fragmentShader = `
+        varying vec2 vUv;
+        varying vec2 vTerrainUV;
+        uniform sampler2D pathMask;
+    ` + shader.fragmentShader
 
-		// 4. Теперь можно использовать vUv во фрагментном шейдере
-		shader.fragmentShader = shader.fragmentShader.replace(
-			"#include <color_fragment>",
-			`
-			vec3 baseColor = vec3(0.2, 0.6, 0.3);
-			vec3 tipColor = vec3(0.4, 0.9, 0.5);
-			float gradient = smoothstep(0.3, 0.8, vUv.y);
-			vec3 clr = mix(baseColor, tipColor, vUv.y);
-			vec3 clr2 = mix(baseColor, tipColor, vUv.x);
-
-			diffuseColor = vec4(clr , 1.0);
-			//diffuseColor = vec4(1.0, 0.0, 0.0,1.0);
-		`
-		)
-		// Обновляем шейдер материала
-		grassMaterial.userData.shader = shader
-	}
+    shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <color_fragment>",
+        `
+            // Читаем маску
+            vec4 mask = texture2D(pathMask, vTerrainUV);
+            if (mask.r > 0.5) discard; // Отбрасываем пиксели, где маска темная
+            
+            // Оригинальный цвет травы
+            vec3 baseColor = vec3(0.2, 0.6, 0.3);
+            vec3 tipColor = vec3(0.4, 0.9, 0.5);
+            vec3 clr = mix(baseColor, tipColor, vUv.y);
+            
+            diffuseColor = vec4(clr , 1.0);
+            if (mask.r >  0.01 && mask.r < 0.2) diffuseColor = vec4(0.0, 0.0, 1.0 , 1.0);
+            //discard;
+        `
+    )
+    
+    grassMaterial.userData.shader = shader
+}
 
 	//const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
@@ -1059,9 +1139,9 @@ gui.add(stats, 'renderCalls').name('Render Calls').listen()
 gui.add(stats, 'triangles').name('Triangles').listen()
 gui.add(stats, 'geometries').name('Geometries').listen()
 gui.add(stats, 'textures').name('Textures').listen()
-gui.addColor(stats, 'color').name('landColor').onChange((value) => {
-    mapPlaneMaterial.color.set(value)
-})
+// gui.addColor(stats, 'color').name('landColor').onChange((value) => {
+//     mapPlaneMaterial.color.set(value)
+// })
 
 
 
