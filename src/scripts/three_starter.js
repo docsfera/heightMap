@@ -285,7 +285,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			wf2.scale.set(5,5,5)
 		})
 
-		loader.loadGLTF("./3d/pers.gltf", async (gltf) => {
+		loader.loadGLTF("./3d/tree.glb", async (gltf) => { // pers
 			const pers = gltf.scene
 			console.log({pers})
 			scene.add(pers)
