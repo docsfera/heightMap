@@ -16,6 +16,8 @@ import { EffectPass } from "postprocessing";
 import { N8AOPostPass } from "n8ao";
 import { proceduralEnvironmentHandler } from './procedural_envmap.js';
 
+import {GhibliShader} from "./GhibliShader.js"
+
 import Stats from 'stats-js'
 
 //import { RenderPass, EffectComposer, OutlinePass } from "three-outlinepass"
@@ -285,15 +287,20 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			wf2.scale.set(5,5,5)
 		})
 
-		loader.loadGLTF("./3d/tree.glb", async (gltf) => { // pers
+		loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
 			const pers = gltf.scene
 			console.log({pers})
 			scene.add(pers)
-			pers.position.y = 15.5
-			pers.position.x = -8
-			pers.position.z = -14
+
+			//pers.getObjectByName("Follage").material = new THREE.ShaderMaterial(GhibliShader)
+			pers.getObjectByName("Foliage").material = new THREE.ShaderMaterial(GhibliShader)
+			pers.position.y = 22
+			pers.position.x = 20
+			pers.position.z = -40
 			//wf.scale.set(0.015,0.015,0.015)
-			pers.scale.set(4,4,4)
+			//pers.scale.set(4,4,4)
+
+			//pers.rotation.z = Math.PI / 2
 		})
 
 
