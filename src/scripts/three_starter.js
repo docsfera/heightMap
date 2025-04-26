@@ -124,10 +124,15 @@ const textureLoader = new THREE.TextureLoader()
 //const displacement = textureLoader.load('./3d/map2.jpg')
 const displacement = textureLoader.load('./3d/lod.png')
 const map = textureLoader.load('./3d/tex2.jpg')
-const sand = textureLoader.load('./3d/sand.png')
+map.wrapS = THREE.RepeatWrapping;
+map.wrapT = THREE.RepeatWrapping;
+map.repeat.set(10, 10); // Масштаб текстуры
+//const sand = textureLoader.load('./3d/sand.png')
+const sand = textureLoader.load('./3d/animesand.jpg')
 sand.wrapS = THREE.RepeatWrapping;
 sand.wrapT = THREE.RepeatWrapping;
 sand.repeat.set(10, 10); // Масштаб текстуры
+sand.needsUpdate = true
 const mask = textureLoader.load('./3d/mask.png')
 
 const mapPlaneWidth = 200
@@ -144,6 +149,9 @@ const fragColorPlaneDisplacementScale = 30
 const textureScaleZ = 0.4//0.6
 
 const grassCount = 400000
+
+let oblakoMass = []
+let oblakoPhiMass = []
 
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
@@ -218,6 +226,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			const table = gltf.scene
 			console.log({table})
 			scene.add(table)
+			table.name = "table"
 			table.traverse(_ => {
 				if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
 			})
@@ -287,20 +296,82 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			wf2.scale.set(5,5,5)
 		})
 
+		loader.loadGLTF("./3d/pers.gltf", async (gltf) => {
+			const wf2 = gltf.scene
+			console.log({wf2})
+			scene.add(wf2)
+			wf2.position.y = 15.5
+			wf2.position.x = -8
+			wf2.position.z = -14
+			//wf.scale.set(0.015,0.015,0.015)
+			wf2.scale.set(5,5,5)
+		})
+
 		loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
 			const pers = gltf.scene
-			console.log({pers})
 			scene.add(pers)
 
-			//pers.getObjectByName("Follage").material = new THREE.ShaderMaterial(GhibliShader)
 			pers.getObjectByName("Foliage").material = new THREE.ShaderMaterial(GhibliShader)
-			pers.position.y = 22
-			pers.position.x = 20
+			pers.position.y = 15.5
+			pers.position.x = 100
 			pers.position.z = -40
-			//wf.scale.set(0.015,0.015,0.015)
-			//pers.scale.set(4,4,4)
 
-			//pers.rotation.z = Math.PI / 2
+			for (let i=-25; i < 25; i++) {
+				const n = pers.clone()
+				//n.children[0].material = n.children[0].material.clone()
+				n.position.set(100 - Math.random() * 5, 15.5 + Math.random() * 2, -i * 4)
+
+				const ss = 1 + Math.random()
+				n.scale.set(ss, ss, ss)
+				scene.add(n)
+			}
+			for (let i=-25; i < 25; i++) {
+				const n = pers.clone()
+				n.position.set( -i * 4 , 15.5 + Math.random() * 2, -100 + Math.random() * 5)
+
+				const ss = 1 + Math.random()
+				n.scale.set(ss, ss, ss)
+
+				scene.add(n)
+			}
+
+			const oblako = pers.clone()
+			oblako.children[0].material = pers.children[0].material.clone()
+
+			oblako.children[0].material.uniforms.colorMap.value = [
+		        new THREE.Color("#ffffff"),
+		        new THREE.Color("#f2f2f2"),
+		        new THREE.Color("#fcfcfc"),
+		        new THREE.Color("#f2f2f2"),
+		    ]
+		    oblako.scale.set(3, 1.5, 1.5)
+		    oblako.name = "oblako"
+
+
+		    for (let i=0; i < 25; i++) {
+				const o = oblako.clone()
+				scene.add(o)
+
+				const s = 1 + Math.random()
+				o.scale.set(s,s,s)
+
+				oblakoMass.push(o)
+				oblakoPhiMass.push([200 + Math.random() * 100, Math.PI/2 - 0.25, Math.PI * (0.5 -Math.random()) *2]) // random, th,ph
+			}
+
+
+
+		    //scene.add(oblako)
+
+		    // const o1 = oblako.clone()
+
+		    // o1.position.set(170, 35, -70)
+		    // o1.scale.set(3, 1.5, 7)
+		    // scene.add(o1)
+
+
+
+
 		})
 
 
@@ -482,7 +553,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         mapPlaneMaterial.onBeforeCompile = (shader) => {
     // Добавляем uniforms
     shader.uniforms.pathMask = { value: mask };
-    shader.uniforms.pathTexture = { value: sand };
+    shader.uniforms.pathTexture = { value: map };
     
     // Вершинный шейдер
     shader.vertexShader = shader.vertexShader.replace(
@@ -500,7 +571,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         `
         	vUv = uv;
             // UV для маски (повторение как у основной текстуры)
-            vTerrainUV = uv * 10.0;
+            vTerrainUV = uv * 50.0;
             #include <uv_vertex>
         `
     );
@@ -517,7 +588,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         "#include <map_fragment>",
         `
         // Основной цвет текстуры
-        vec4 baseColor = texture2D(map, vUv);
+        vec4 baseColor = texture2D(map, vUv * 20.0); // 20!!! sand wrap is 50!! be careful
         
         // Цвет тропинки
         vec4 pathColor = texture2D(pathTexture, vTerrainUV);
@@ -526,8 +597,9 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         float maskValue = texture2D(pathMask, vec2(vUv.x, 1.0 - vUv.y)).g;
         
         // Смешивание с плавным переходом
-        float mixFactor = smoothstep(0.3, 0.7, 1.0 - maskValue);
-        vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(0.0, 1.0, 0.0, 1.0), mixFactor);
+        //float mixFactor = smoothstep(0.3, 0.7, 1.0 - maskValue);
+        float mixFactor = step(0.7, 1.0 - maskValue);
+        vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(0.4, 1.4, 0.5, 1.0), mixFactor);
         //vec4 finalColor = mix(vec4(0.2, 0.2, 0.2, 1.0), vec4(1.0, 0.0, 0.0, 1.0), mixFactor);
         
         diffuseColor *= finalColor;
@@ -918,6 +990,7 @@ setTimeout(() => {
 	const grassGeometry = new THREE.BufferGeometry()
 	grassGeometry.setAttribute('position', new THREE.BufferAttribute(grassVertexsArray, 3))
 	grassGeometry.setAttribute('uv', new THREE.BufferAttribute(grassUvs, 2))
+	grassGeometry.setAttribute('iscale', new THREE.InstancedBufferAttribute(new Float32Array([0.01,0.01,0.01]), 3, false, 1))
 	grassGeometry.setIndex(new THREE.BufferAttribute(grassIndices, 1))
 
 	console.log({grassGeometry})
@@ -990,8 +1063,11 @@ setTimeout(() => {
         `
             #include <common>
             varying vec2 vUv;
+            varying vec3 vpos;
             varying vec2 vTerrainUV; // UV для маски
             uniform sampler2D pathMask;
+
+            attribute vec3 iscale;
         `
     )
     
@@ -999,9 +1075,22 @@ setTimeout(() => {
         "#include <uv_vertex>",
         `
             vUv = uv;
+            vpos = position * iscale;
+            vpos.x = 0.0;
+            vpos.y = 0.0;
+            vpos.z = 0.0;
             
+         
+
+            // vec4 mask = texture2D(pathMask, vTerrainUV);
+            // if (mask.r >  0.01 && mask.r < 0.2){
+            // 	vpos.x = 0.0;
+            // 	vpos.y = 0.0;
+            // 	vpos.z = 0.0;
+            // }
+
             // Рассчитываем UV маски на основе мировых координат
-            vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
+            vec4 worldPosition = modelMatrix * instanceMatrix * vec4(vpos, 1.0);
             vTerrainUV = (worldPosition.xz + vec2(100.0)) / 200.0; // Для плоскости 200x200 ////////////////////////////////////////// 200!!!!! TODO
             
             #include <uv_vertex>
@@ -1010,6 +1099,7 @@ setTimeout(() => {
     
     shader.fragmentShader = `
         varying vec2 vUv;
+        varying vec3 vpos;
         varying vec2 vTerrainUV;
         uniform sampler2D pathMask;
     ` + shader.fragmentShader
@@ -1027,7 +1117,7 @@ setTimeout(() => {
             vec3 clr = mix(baseColor, tipColor, vUv.y);
             
             diffuseColor = vec4(clr , 1.0);
-            if (mask.r >  0.01 && mask.r < 0.2) diffuseColor = vec4(0.0, 0.0, 1.0 , 1.0);
+            //if (mask.r >  0.01 && mask.r < 0.2) discard; //diffuseColor = vec4(0.0, 0.0, 1.0 , 1.0);
             //discard;
         `
     )
@@ -1037,6 +1127,12 @@ setTimeout(() => {
 
 	//const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
+
+	grassGeometry.attributes.iscale.needsUpdate = true
+
+	console.warn(grassGeometry.attributes)
+	console.warn(grassGeometry.attributes)
+	console.warn(grassGeometry.attributes)
 
 	const planeByTextureVerticesVectors = []
 	const planeByTextureVertexsPositions = planeByTextureGeometry.attributes.position.array
@@ -1126,11 +1222,15 @@ setTimeout(() => {
 
 	console.log(grasses.instanceMatrix.array)
 
+	activeCamera.controls.setLookAt(-55.474687739807365, 27.167925110735894, 41.81928096736683, 10.814844136319213, 18.044455466157817, 3.187493220094487);
+
 	grasses.scale.z = -1
 	scene.add(grasses)
 
 	gui.add(grasses.position, 'x').min(-20).max(20)
 	gui.add(grasses.position, 'z').min(-20).max(20)
+
+
 	
 }, 1000)
 
@@ -1142,13 +1242,41 @@ const stats = {
 	color: "#68ac89"
 }
 
+const shader = {
+	stColor1: "#7ed3b9",
+	stColor2: "#6ab9a2",
+	stColor3: "#539d87",
+	stColor4: "#307e75",
+
+	
+}
+
 gui.add(stats, 'renderCalls').name('Render Calls').listen()
 gui.add(stats, 'triangles').name('Triangles').listen()
 gui.add(stats, 'geometries').name('Geometries').listen()
 gui.add(stats, 'textures').name('Textures').listen()
-// gui.addColor(stats, 'color').name('landColor').onChange((value) => {
-//     mapPlaneMaterial.color.set(value)
-// })
+
+const upColor = () => {
+	scene.getObjectByName("Foliage").material.uniforms.colorMap.value = [
+        new THREE.Color(shader.stColor1),
+        new THREE.Color(shader.stColor2),
+        new THREE.Color(shader.stColor3),
+        new THREE.Color(shader.stColor4),
+      ]
+}
+
+gui.addColor(shader, 'stColor1').onChange((value) => {
+    upColor()
+})
+gui.addColor(shader, 'stColor2').onChange((value) => {
+    upColor()
+})
+gui.addColor(shader, 'stColor3').onChange((value) => {
+    upColor()
+})
+gui.addColor(shader, 'stColor4').onChange((value) => {
+    upColor()
+})
 
 
 
@@ -1159,6 +1287,16 @@ document.body.appendChild(stats1.dom)
 
 
 function animate() {
+
+	//oblakoPhi += 0.1
+
+	//if(scene.getObjectByName("oblako")) scene.getObjectByName("oblako").position.setFromSphericalCoords(200, Math.PI/2 - 0.15, oblakoPhi)
+
+	oblakoMass.map((oblako, i) => {
+		oblakoPhiMass[i][2] += 0.001
+		oblako.position.setFromSphericalCoords(oblakoPhiMass[i][0], oblakoPhiMass[i][1], oblakoPhiMass[i][2] )
+	})	
+
 	stats1.begin();
   
 	const deltaTime = clock.getDelta();

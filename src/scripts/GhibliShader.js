@@ -4,10 +4,10 @@ export const GhibliShader = {
   uniforms: {
     colorMap: {
       value: [
-        new Color("#427062"),
-        new Color("#33594E"),
-        new Color("#234549"),
-        new Color("#1E363F"),
+        new Color("#7ed3b9"),
+        new Color("#6ab9a2"),
+        new Color("#539d87"),
+        new Color("#307e75"),
       ],
     },
     brightnessThresholds: {
@@ -64,4 +64,5 @@ export const GhibliShader = {
 
       gl_FragColor = vec4( final ) * vec4(1.0);
     }`,
+    
 };
