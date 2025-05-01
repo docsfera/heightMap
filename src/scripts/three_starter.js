@@ -39,6 +39,10 @@ import vv from './shaders/gpgpu/vv.glsl'
 import gpgpuParticlesShader from './shaders/gpgpu/particles.glsl'
 
 
+import grassV from './shaders/grass/vertex.glsl'
+import grassF from './shaders/grass/fragment.glsl'
+
+
 import { Pass } from "three/examples/jsm/postprocessing/Pass.js";
 import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -599,7 +603,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         // Смешивание с плавным переходом
         //float mixFactor = smoothstep(0.3, 0.7, 1.0 - maskValue);
         float mixFactor = step(0.7, 1.0 - maskValue);
-        vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(0.4, 1.4, 0.5, 1.0), mixFactor);
+        vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(1.4, 1.4, 0.5, 1.0), mixFactor);
         //vec4 finalColor = mix(vec4(0.2, 0.2, 0.2, 1.0), vec4(1.0, 0.0, 0.0, 1.0), mixFactor);
         
         diffuseColor *= finalColor;
@@ -1052,7 +1056,7 @@ setTimeout(() => {
 
 	//const count = grassCount * grassCount
 
-	const grassMaterial = new THREE.MeshBasicMaterial({color: "green", side: THREE.DoubleSide})
+	let grassMaterial = new THREE.MeshBasicMaterial({color: "green", side: THREE.DoubleSide})
 
 	grassMaterial.onBeforeCompile = (shader) => {
     // Добавляем uniform для маски
@@ -1124,6 +1128,15 @@ setTimeout(() => {
     
     grassMaterial.userData.shader = shader
 }
+
+	grassMaterial = new THREE.ShaderMaterial({
+		vertexShader: grassV,
+		fragmentShader: grassF,
+		side: THREE.DoubleSide,
+		uniforms: {
+			pathMask: { value: mask }
+		},
+	})
 
 	//const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
