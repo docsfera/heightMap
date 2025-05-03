@@ -241,7 +241,12 @@ three-outlinepass@^1.2.0:
   resolved "https://registry.npmjs.org/three-outlinepass/-/three-outlinepass-1.2.0.tgz"
   integrity sha512-xCEmmf4IZsixXi5Hl14qULk2D9CMEbPg6ZjGBWr5oAk+6K3ZILBNRKXEEcOcdPvZgRtHz/fw1MUFgxbwPAnVQA==
 
-three@^0.164.1, "three@>= 0.157.0 < 0.171.0", three@>=0.126.1, three@>=0.137, three@>=0.154, three@>=0.159.0:
+three-simple-fp-controls@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/three-simple-fp-controls/-/three-simple-fp-controls-1.0.2.tgz"
+  integrity sha512-gRW/ezgCibjA/qGG7Ep5D1I7kZHO5+Rzorarkh2tImUT5PCGhiRMLGgLvzHBFLLJO+nXY2WQRT/VonPfVWHXKQ==
+
+three@*, three@^0.164.1, "three@>= 0.157.0 < 0.171.0", three@>=0.126.1, three@>=0.137, three@>=0.154, three@>=0.159.0:
   version "0.164.1"
   resolved "https://registry.npmjs.org/three/-/three-0.164.1.tgz"
   integrity sha512-iC/hUBbl1vzFny7f5GtqzVXYjMJKaTPxiCxXfrvVdBi1Sf+jhd1CAkitiFwC7mIBFCo3MrDLJG97yisoaWig0w==

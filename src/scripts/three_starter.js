@@ -54,9 +54,13 @@ import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
 import { CustomOutlinePass } from "./CustomOutlinePass.js";
 import FindSurfaces from "./FindSurfaces.js";
 
+import SimpleFPControls from "three-simple-fp-controls"
+import {switchFPSCamera} from"./switchFPSCamera.js"
+
 const container3D = document.querySelector(".d3d-container");
 const foreground = document.querySelector(".foreground");
 
+let controls_ = null
 let composer
 let controls
 //let composer, renderPass, n8aopass;
@@ -89,17 +93,23 @@ bgFolder.add(scene.fog, 'far');
 
 
 let activeCamera;
-scene.setActiveCamera = (camera) => {
+scene.setActiveCamera = (camera, isfps = false) => {
 	activeCamera = camera;
 	// renderPass.camera = activeCamera;
 	// n8aopass.camera = activeCamera;
 
-	onResize(scene.activeRenderer, activeCamera, container3D);
+	if(!isfps){
+		onResize(scene.activeRenderer, activeCamera, container3D);
 	onResize(annRenderer, activeCamera, container3D);
+	}
+	
 };
 scene.activeRenderer = renderer;
 scene.renderer = renderer;
 scene.composer = null;
+
+
+servObj.scene = scene
 
 // composer = new THREE.EffectComposer( renderer );
 
@@ -153,6 +163,8 @@ const fragColorPlaneDisplacementScale = 30
 const textureScaleZ = 0.4//0.6
 
 const grassCount = 400000
+
+const wh = 200
 
 let oblakoMass = []
 let oblakoPhiMass = []
@@ -304,9 +316,12 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 			const wf2 = gltf.scene
 			console.log({wf2})
 			scene.add(wf2)
+			wf2.name = "pers"
 			wf2.position.y = 15.5
 			wf2.position.x = -8
-			wf2.position.z = -14
+			wf2.position.z = 0
+
+			wf2.rotation.y = Math.PI / 2
 			//wf.scale.set(0.015,0.015,0.015)
 			wf2.scale.set(5,5,5)
 		})
@@ -603,7 +618,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         // Смешивание с плавным переходом
         //float mixFactor = smoothstep(0.3, 0.7, 1.0 - maskValue);
         float mixFactor = step(0.7, 1.0 - maskValue);
-        vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(1.4, 1.4, 0.5, 1.0), mixFactor);
+        vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(0.0, 1.0, 0.0, 1.0), mixFactor);
         //vec4 finalColor = mix(vec4(0.2, 0.2, 0.2, 1.0), vec4(1.0, 0.0, 0.0, 1.0), mixFactor);
         
         diffuseColor *= finalColor;
@@ -788,7 +803,7 @@ const options = {
 
 // Создаем отдельную сцену и камеру для рендера в текстуру
 const textureScene = new THREE.Scene()
-const wh = 200
+
 const textureCamera = new THREE.OrthographicCamera( wh / - 2, wh / 2, wh / 2, wh / - 2, 1, 1000 )
 
 const fragColorPlaneClone = fragColorPlane.clone()
@@ -1134,9 +1149,13 @@ setTimeout(() => {
 		fragmentShader: grassF,
 		side: THREE.DoubleSide,
 		uniforms: {
-			pathMask: { value: mask }
+			pathMask: { value: mask },
+			uTime: { value: 0.0 }
 		},
 	})
+
+
+	servObj.grassMaterial = grassMaterial
 
 	//const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
@@ -1299,7 +1318,34 @@ document.body.appendChild(stats1.dom)
 
 
 
+
+let lastTick
+
+
+document.addEventListener("keydown", e => {
+	if(e.code == "KeyP"){
+		switchFPSCamera()
+	}
+})
+
+let testuTime = 0
+
+document.addEventListener("keydown", e => {
+	if(e.code == "KeyC"){
+		console.log(activeCamera.fov)
+		console.log(activeCamera.aspect)
+	}
+})
+
+
+
+
+
 function animate() {
+	testuTime++
+
+	var t = performance.now();
+  var delta = t - lastTick;
 
 	//oblakoPhi += 0.1
 
@@ -1320,7 +1366,7 @@ function animate() {
 
 	//composer.renderer.render();
      //controls.update();
-     activeCamera.update(deltaTime);
+    if(activeCamera.update) activeCamera.update(deltaTime);
 
 	// Очищаем предыдущую статистику
   	renderer.info.reset();
@@ -1353,7 +1399,9 @@ function animate() {
 
 
 
-
+	if(servObj.grassMaterial){
+		servObj.grassMaterial.uniforms.uTime.value = testuTime
+	}
 	
 
 
@@ -1370,6 +1418,8 @@ function animate() {
 
 	// Рендеринг...
   stats1.end();
+
+   lastTick = t;
     // скрыть перекрываемые  аннотации при движении (используется raycaster, сильно тормозит приложение)
     // hideInvisibleAnns(activeCamera, servObj && servObj.annotations)
 }
