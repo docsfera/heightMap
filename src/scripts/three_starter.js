@@ -1,7 +1,6 @@
 import './debug_gui.js';
 import * as THREE from "three";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-//THREE.PlaneBufferGeometry = THREE.PlaneGeometry
 import { loader } from "./loader.js";
 import { onResize } from "./resize.js";
 import { initRaycaster } from "./raycaster.js";
@@ -11,23 +10,12 @@ import { materials } from "./materials.js";
 import { sceneHandler } from "./scene.js";
 import { clippingPlanes } from "./clipping_planes.js";
 import * as Camera from "./Camera.js";
-//import { EffectComposer, RenderPass } from "postprocessing";
-import { EffectPass } from "postprocessing";
-import { N8AOPostPass } from "n8ao";
+
 import { proceduralEnvironmentHandler } from './procedural_envmap.js';
-
-import {GhibliShader} from "./GhibliShader.js"
-
 import Stats from 'stats-js'
 
-//import { RenderPass, EffectComposer, OutlinePass } from "three-outlinepass"
-//import "./OutlinePass.js"
-
-import { InstancedMesh2 } from '@three.ez/instanced-mesh';
-//import { GPUComputationRenderer } from 'gpucomputationrender-three';
-import { GPUComputationRenderer } from 'three/examples/jsm/misc/GPUComputationRenderer.js';
-
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
+
 
 import shaderV from './shaders/river/vertex.glsl'
 import shaderF from './shaders/river/fragment.glsl'
@@ -43,27 +31,25 @@ import grassV from './shaders/grass/vertex.glsl'
 import grassF from './shaders/grass/fragment.glsl'
 
 
-import { Pass } from "three/examples/jsm/postprocessing/Pass.js";
-import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass.js";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
-import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
-import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+// import { Pass } from "three/examples/jsm/postprocessing/Pass.js";
+// import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass.js";
+// import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+// import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+// import { FXAAShader } from "three/examples/jsm/shaders/FXAAShader.js";
 
-import { CustomOutlinePass } from "./CustomOutlinePass.js";
-import FindSurfaces from "./FindSurfaces.js";
 
 import SimpleFPControls from "three-simple-fp-controls"
 import {switchFPSCamera} from"./switchFPSCamera.js"
 
+
+import {loadModels} from "./loadModels.js"
+
 const container3D = document.querySelector(".d3d-container");
 const foreground = document.querySelector(".foreground");
 
-let controls_ = null
-let composer
+
 let controls
-//let composer, renderPass, n8aopass;
+
 const renderer = new THREE.WebGLRenderer({
 	antialias: true,
 	outputColorSpace: THREE.SRGBColorSpace,
@@ -82,57 +68,35 @@ window.container3D.canvas = canvas;
 
 const annRenderer = initCSS2DRenderer(container3D);
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xa0d8ef); // Небесно-голубой
-scene.fog = new THREE.Fog(0xa0d8ef, 0.02);
-const bgFolder = gui.addFolder('Background');
-bgFolder.addColor(scene, 'background').onFinishChange((event) => console.log(event.getHexString()));
-bgFolder.addColor(scene.fog, 'color').onFinishChange((event) => console.log(event.getHexString()));
-bgFolder.add(scene.fog, 'near');
-bgFolder.add(scene.fog, 'far');
+const scene = new THREE.Scene()
+servObj.scene = scene
+scene.background = new THREE.Color(0xa0d8ef) // Небесно-голубой
+scene.fog = new THREE.Fog(0xa0d8ef, 0.02)
+const bgFolder = gui.addFolder('Background')
+bgFolder.addColor(scene, 'background').onFinishChange((event) => console.log(event.getHexString()))
+bgFolder.addColor(scene.fog, 'color').onFinishChange((event) => console.log(event.getHexString()))
+bgFolder.add(scene.fog, 'near')
+bgFolder.add(scene.fog, 'far')
 
 
-let activeCamera;
+let activeCamera
 scene.setActiveCamera = (camera, isfps = false) => {
-	activeCamera = camera;
-	// renderPass.camera = activeCamera;
-	// n8aopass.camera = activeCamera;
+	activeCamera = camera
 
 	if(!isfps){
-		onResize(scene.activeRenderer, activeCamera, container3D);
-	onResize(annRenderer, activeCamera, container3D);
+		onResize(scene.activeRenderer, activeCamera, container3D)
+		onResize(annRenderer, activeCamera, container3D)
 	}
 	
-};
-scene.activeRenderer = renderer;
-scene.renderer = renderer;
-scene.composer = null;
-
-
-servObj.scene = scene
-
-// composer = new THREE.EffectComposer( renderer );
-
-// var renderPass = new RenderPass( scene, camera );
-// composer.addPass( renderPass );
-
-//scene.fog = new THREE.Fog( 0xcccccc, 1, 1500 );
+}
+scene.activeRenderer = renderer
+scene.renderer = renderer
+scene.composer = null
 
 
 let mapPlane, riverPlane, riverMaterial
 
 let positionRenderTarget , positionScene, positionCamera, positionMesh
-
-
-class InstancedFloat16BufferAttribute extends THREE.InstancedBufferAttribute {
-
-	constructor( array, itemSize, normalized, meshPerAttribute = 1 ) {
-
-		super( new Uint16Array( array ), itemSize, normalized, meshPerAttribute );
-
-		this.isFloat16BufferAttribute = true;
-	}
-};
 
 const textureLoader = new THREE.TextureLoader()
 //const displacement = textureLoader.load('./3d/map2.jpg')
@@ -166,366 +130,30 @@ const grassCount = 400000
 
 const wh = 200
 
-let oblakoMass = []
-let oblakoPhiMass = []
+
 
 export const sceneLoadPromise = new Promise(function (resolve, reject) {
 	loader.loadGLTF("./3d/three_starter.glb", async (gltf) => {
-		scene.add(gltf.scene);
-		scene.animations = gltf.animations;
+		scene.add(gltf.scene)
+		scene.animations = gltf.animations
 
-		console.log(scene, renderer);
+		console.log(scene, renderer)
 
+		loadModels()
 
-		
-
-        /// UPDATE VERTEX HEIGHT ////
-
-  //       const positionMaterial = new CustomShaderMaterial({
-  //       	baseMaterial: mapPlaneMaterial,
-		//     vertexShader: `
-		//         varying vec4 vWorldPosition;
-		//         void main() {
-		//             // Сохраняем мировую позицию вершины
-		//             vWorldPosition = modelMatrix * vec4(position, 1.0);
-		//             gl_Position = projectionMatrix * viewMatrix * vWorldPosition;
-		//         }
-		//     `,
-		//     fragmentShader: `
-		//         varying vec4 vWorldPosition;
-		//         void main() {
-		//             // Записываем позицию в RGBA-текстуру (нормализованную)
-		//             gl_FragColor = vec4(vWorldPosition.xyz / 100.0, 1.0); 
-		//         }
-		//     `
-		// })
-
-		// positionRenderTarget  = new THREE.WebGLRenderTarget(1024, 1024, {
-		//     type: THREE.FloatType,
-		//     format: THREE.RGBAFormat
-		// })
-
-		// //Создаем сцену и камеру для рендера позиций
-		// positionScene = new THREE.Scene()
-		// positionCamera = new THREE.PerspectiveCamera( 45, 1.2, 1, 1000 )//activeCamera.clone(); // Используем ту же камеру
-		// positionMesh = mapPlane.clone() // Копируем меш
-		// positionMesh.material = positionMaterial
-		// positionScene.add(positionMesh)
-
-
-        // const mapPlaneVertexPositions = mapPlaneGeometry.attributes.position.array;
-
-        // console.log({mapPlaneVertexPositions})
-
-  //       for (let i = 0; i < mapPlaneVertexPositions.length; i += 3) {
-		// 	const geometry = new THREE.BoxGeometry( 1, 1, 1 )
-		// 	const material = new THREE.MeshBasicMaterial({color: 0x00ff00})
-		// 	const cube = new THREE.Mesh(geometry, material)
-		// 	//scene.add( cube );
-		// 	cube.position.x = mapPlaneVertexPositions[i]
-		// 	cube.position.z = mapPlaneVertexPositions[i+1]
-		// 	cube.position.y = mapPlaneVertexPositions[i+2]
-		// }
-
-
-		/////////////////////
-
-		scene.getObjectByName("suzanne").visible = true
-		scene.getObjectByName("curve").visible = false
-		scene.getObjectByName("cube").visible = false
-		scene.getObjectByName("sphere").visible = false
-		scene.getObjectByName("slim_cube").visible = false
-		scene.getObjectByName("floor").visible = false
-
-
-		loader.loadGLTF("./3d/untitled.gltf", async (gltf) => {
-			const table = gltf.scene
-			console.log({table})
-			scene.add(table)
-			table.name = "table"
-			table.traverse(_ => {
-				if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
-			})
-			table.position.y = 19.5
-			table.scale.set(5,5,5)
-
-		})
-
-		loader.loadGLTF("./3d/rocks.gltf", async (gltf) => {
-			const rocks = gltf.scene
-			console.log({rocks})
-			scene.add(rocks)
-			// rocks.traverse(_ => {
-			// 	if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
-			// })
-			rocks.position.y = 15.5
-			rocks.position.x = 35
-			rocks.scale.set(3,3,3)
-
-		})
-		loader.loadGLTF("./3d/chair.gltf", async (gltf) => {
-			const chair = gltf.scene
-			console.log({chair})
-			scene.add(chair)
-			chair.traverse(_ => {
-				if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
-			})
-			chair.position.y = 19
-			chair.position.x = 6
-			chair.scale.set(6,6,6)
-
-		})
-		loader.loadGLTF("./3d/wf.gltf", async (gltf) => {
-			const wf = gltf.scene
-			console.log({wf})
-			scene.add(wf)
-			wf.position.y = 15.5
-			wf.position.x = -14
-			wf.position.z = -14
-			//wf.scale.set(0.015,0.015,0.015)
-			wf.scale.set(0.03,0.03,0.03)
-
-			const copy = wf.clone()
-			copy.position.x = -14
-			copy.position.z = -14
-			copy.rotation.y = Math.PI / 3
-			scene.add(copy)
-
-
-			// for (let i = 0; i < 400; i++) {
-			// 	const copy = wf.clone()
-			// 	copy.position.x = (Math.random() - 0.5) * 200
-			// 	copy.position.z = (Math.random() - 0.5) * 200
-			// 	scene.add(copy)
-			// }
-
-		})
-
-		loader.loadGLTF("./3d/wf2.gltf", async (gltf) => {
-			const wf2 = gltf.scene
-			console.log({wf2})
-			scene.add(wf2)
-			wf2.position.y = 15.5
-			wf2.position.x = -8
-			wf2.position.z = -14
-			//wf.scale.set(0.015,0.015,0.015)
-			wf2.scale.set(5,5,5)
-		})
-
-		loader.loadGLTF("./3d/pers.gltf", async (gltf) => {
-			const wf2 = gltf.scene
-			console.log({wf2})
-			scene.add(wf2)
-			wf2.name = "pers"
-			wf2.position.y = 15.5
-			wf2.position.x = -8
-			wf2.position.z = 0
-
-			wf2.rotation.y = Math.PI / 2
-			//wf.scale.set(0.015,0.015,0.015)
-			wf2.scale.set(5,5,5)
-		})
-
-		loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
-			const pers = gltf.scene
-			scene.add(pers)
-
-			pers.getObjectByName("Foliage").material = new THREE.ShaderMaterial(GhibliShader)
-			pers.position.y = 15.5
-			pers.position.x = 100
-			pers.position.z = -40
-
-			for (let i=-25; i < 25; i++) {
-				const n = pers.clone()
-				//n.children[0].material = n.children[0].material.clone()
-				n.position.set(100 - Math.random() * 5, 15.5 + Math.random() * 2, -i * 4)
-
-				const ss = 1 + Math.random()
-				n.scale.set(ss, ss, ss)
-				scene.add(n)
-			}
-			for (let i=-25; i < 25; i++) {
-				const n = pers.clone()
-				n.position.set( -i * 4 , 15.5 + Math.random() * 2, -100 + Math.random() * 5)
-
-				const ss = 1 + Math.random()
-				n.scale.set(ss, ss, ss)
-
-				scene.add(n)
-			}
-
-			const oblako = pers.clone()
-			oblako.children[0].material = pers.children[0].material.clone()
-
-			oblako.children[0].material.uniforms.colorMap.value = [
-		        new THREE.Color("#ffffff"),
-		        new THREE.Color("#f2f2f2"),
-		        new THREE.Color("#fcfcfc"),
-		        new THREE.Color("#f2f2f2"),
-		    ]
-		    oblako.scale.set(3, 1.5, 1.5)
-		    oblako.name = "oblako"
-
-
-		    for (let i=0; i < 25; i++) {
-				const o = oblako.clone()
-				scene.add(o)
-
-				const s = 1 + Math.random()
-				o.scale.set(s,s,s)
-
-				oblakoMass.push(o)
-				oblakoPhiMass.push([200 + Math.random() * 100, Math.PI/2 - 0.25, Math.PI * (0.5 -Math.random()) *2]) // random, th,ph
-			}
-
-
-
-		    //scene.add(oblako)
-
-		    // const o1 = oblako.clone()
-
-		    // o1.position.set(170, 35, -70)
-		    // o1.scale.set(3, 1.5, 7)
-		    // scene.add(o1)
-
-
-
-
-		})
-
-
-		
-
-
-
-
-
-		/////////////////////
-
-		
 		//Init block
-		proceduralEnvironmentHandler.init(scene, renderer); // нет тени из-заэ того
-		animations.initHandler(scene);
-		activeCamera = new Camera.Perspective(canvas);
+		proceduralEnvironmentHandler.init(scene, renderer) // нет тени из-заэ того
+		animations.initHandler(scene)
+		activeCamera = new Camera.Perspective(canvas)
 		controls = new OrbitControls(activeCamera, renderer.domElement)
-		initRaycaster(scene, activeCamera);
-		clippingPlanes.init(scene);
+		initRaycaster(scene, activeCamera)
+		clippingPlanes.init(scene)
 		
-		onResize(renderer, activeCamera, container3D);
-		onResize(annRenderer, activeCamera, container3D);
+		onResize(renderer, activeCamera, container3D)
+		onResize(annRenderer, activeCamera, container3D)
 
-		window.addEventListener("resize", () => onResize(scene.activeRenderer, activeCamera, container3D));
-		window.addEventListener("resize", () => onResize(annRenderer, activeCamera, container3D));
-		
-		
-		// renderPass = new RenderPass( scene, activeCamera )
-		// n8aopass = new N8AOPostPass(
-		// 	scene,
-		// 	activeCamera,
-		// 	container3D.offsetWidth, 
-		// 	container3D.offsetHeight
-		// );
-		// const aoFolder = gui.addFolder('AO');
-		// n8aopass.configuration.aoRadius = 2.0; 						aoFolder.add(n8aopass.configuration, 'aoRadius');
-		// n8aopass.configuration.distanceFalloff = 1.0; 				aoFolder.add(n8aopass.configuration, 'distanceFalloff');
-		// n8aopass.configuration.intensity = 4.0; 					aoFolder.add(n8aopass.configuration, 'intensity');
-		// n8aopass.configuration.halfRes = false; 					aoFolder.add(n8aopass.configuration, 'halfRes');
-		// n8aopass.configuration.accumulate = false; 					aoFolder.add(n8aopass.configuration, 'accumulate');
-		// n8aopass.configuration.color = new THREE.Color(0x000000); 	aoFolder.addColor(n8aopass.configuration, 'color').onFinishChange((event) => console.log(event.getHexString()));
-		// n8aopass.setQualityMode("Low"); 
-	
-		// composer.addPass(renderPass);
-		// composer.addPass(n8aopass);
-		// scene.composer = composer;
-		// gui.add(scene, 'activeRenderer', {renderer: scene.renderer, composer: scene.composer});
-
-
-
-		//////// COMPOSER /////////
-		// Initial render pass.
-
-		const testCube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({color: "blue"}))
-		scene.add(testCube)
-		testCube.position.z = 4
-		testCube.position.y = 20
-
-		const depthTexture = new THREE.DepthTexture();
-		const renderTarget1 = new THREE.WebGLRenderTarget(
-		  window.innerWidth,
-		  window.innerHeight,
-		  {
-		    depthTexture: depthTexture,
-		    depthBuffer: true,
-		  }
-		);
-
-		composer = new EffectComposer(renderer, renderTarget1);
-		activeCamera.position.z = 5
-		const pass = new RenderPass(scene, activeCamera);
-		pass.camera = activeCamera
-		composer.addPass(pass);
-
-		console.log({activeCamera})
-
-		// Outline pass.
-		const customOutline = new OutlinePass(
-		  new THREE.Vector2(window.innerWidth, window.innerHeight),
-		  scene,
-		  activeCamera
-		);
-		composer.addPass(customOutline);
-
-		// Antialias pass.
-		const effectFXAA = new ShaderPass(FXAAShader);
-		effectFXAA.uniforms["resolution"].value.set(
-		  1 / window.innerWidth,
-		  1 / window.innerHeight
-		);
-		composer.addPass(effectFXAA);
-
-		// const surfaceFinder = new FindSurfaces();
-
-		// surfaceFinder.surfaceId = 0;
-
-		
-
-		// const colorsTypedArray = surfaceFinder.getSurfaceIdAttribute(testCube);
-		// console.log({colorsTypedArray})
-	 // //      scene.getObjectByName("suzanne").geometry.setAttribute(
-	 // //        "color",
-	 // //        new THREE.BufferAttribute(colorsTypedArray, 4)
-	 // //      );
-
-	 // //     customOutline.updateMaxSurfaceId(surfaceFinder.surfaceId + 1);
-
-		// testCube.geometry.setAttribute(
-	 //        "color",
-	 //        new THREE.BufferAttribute(colorsTypedArray, 4)
-	 //    )
-
-	 //    customOutline.updateMaxSurfaceId(1)
-
-	 //    console.log({g: testCube.geometry})
-
-	 //    // customOutline.selectedObjects = [testCube]
-	 //    // pass.selectedObjects = [testCube]
-
-	 //    console.log({customOutline})
-
-
-	 customOutline.selectedObjects = [testCube]
-
-	 // 	testCube.layers.set(1);
-		// // Настройте камеру и пасс для рендера этого слоя:
-		// activeCamera.layers.set(1);
-		// customOutline.renderToScreen = true;
-
-
-
-
-
-
-	     ////////////////////////////////////////////
+		window.addEventListener("resize", () => onResize(scene.activeRenderer, activeCamera, container3D))
+		window.addEventListener("resize", () => onResize(annRenderer, activeCamera, container3D))
 		
 		sceneHandler.init(scene)
 		
@@ -533,10 +161,10 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		
 		animate()
 		animations.fadeIn()
-	});
-});
+	})
+})
 
-const clock = new THREE.Clock();
+const clock = new THREE.Clock()
 
 // const light = new THREE.DirectionalLight(0xfff0dd, 1);
 // light.position.set(10, 20, 10);
@@ -544,37 +172,24 @@ const clock = new THREE.Clock();
 // scene.add(light);
 
 // Заполняющий свет
-scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
-
-// renderer.toneMapping = THREE.ReinhardToneMapping;
-// renderer.toneMappingExposure = 1.2;
-// renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
+scene.add(new THREE.AmbientLight(0x80a0ff, 0.4))
 
 ////////////////// MAP GEOMETRY ////////////
 
-		
+const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
+const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
+    //color: "#68ac89",//"#339966",
+    map:sand,
+    //wireframe: true,
+    displacementMap: displacement,
+    displacementScale: mapPlaneDisplacementScale,
+    //displacementBias: 1
+})
 
-        
-
-        const mapPlaneGeometry = new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, mapPlaneSegments, mapPlaneSegments)
-        const mapPlaneMaterial = new THREE.MeshStandardMaterial({ 
-            //color: "#68ac89",//"#339966",
-            map:sand,
-            //wireframe: true,
-            displacementMap: displacement,
-            displacementScale: mapPlaneDisplacementScale,
-            //displacementBias: 1
-        })
-
-        console.warn(mapPlaneMaterial)
-
-        mapPlaneMaterial.onBeforeCompile = (shader) => {
-    // Добавляем uniforms
-    shader.uniforms.pathMask = { value: mask };
-    shader.uniforms.pathTexture = { value: map };
+mapPlaneMaterial.onBeforeCompile = (shader) => {
+    shader.uniforms.pathMask = { value: mask }
+    shader.uniforms.pathTexture = { value: map }
     
-    // Вершинный шейдер
     shader.vertexShader = shader.vertexShader.replace(
        "#include <common>",
         `
@@ -583,7 +198,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
             varying vec2 vTerrainUV; // UV для маски
             uniform sampler2D pathMask;
         `
-    );
+    )
     
     shader.vertexShader = shader.vertexShader.replace(
         "#include <uv_vertex>",
@@ -593,7 +208,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
             vTerrainUV = uv * 50.0;
             #include <uv_vertex>
         `
-    );
+    )
 
     // Фрагментный шейдер
     shader.fragmentShader = `
@@ -601,7 +216,7 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         varying vec2 vTerrainUV;
         uniform sampler2D pathMask;
         uniform sampler2D pathTexture;
-    ` + shader.fragmentShader;
+    ` + shader.fragmentShader
 
     shader.fragmentShader = shader.fragmentShader.replace(
         "#include <map_fragment>",
@@ -623,110 +238,37 @@ scene.add(new THREE.AmbientLight(0x80a0ff, 0.4));
         
         diffuseColor *= finalColor;
         `
-    );
+    )
     
-    mapPlaneMaterial.userData.shader = shader;
-};
-
-        // const uniforms = {
-        // 	uDisplacementMap: { value: displacement },
-        //     uDisplacementScale: { value: 1.0 },
-        //     uTime: { value: 0.0 },
-        // }
-
-     //    mapPlaneMaterial = new CustomShaderMaterial({
-	    //     baseMaterial: baseMaterial,
-	    //     vertexShader: shaderV,
-	    //     fragmentShader: shaderF,
-	    //     uniforms: uniforms,
-	    //     onBeforeCompile: (shader) => {console.log({shader})}
-	    // });
-
-	    // riverMaterial = new THREE.MeshStandardMaterial({ 
-     //        color: 0x00ffff, //Red
-     //    })
-
-	    riverMaterial = new THREE.ShaderMaterial({
-	    	uniforms: THREE.UniformsUtils.merge( [
-				THREE.UniformsLib[ 'fog' ], {
-					uTime: {value: 0.0}
-				}
-      		]),
-	    	vertexShader: waterV,
-	    	fragmentShader: waterF,
-	        fog: true,
-	    })
-
-	    mapPlane = new THREE.Mesh(mapPlaneGeometry, mapPlaneMaterial)
-	    riverPlane = new THREE.Mesh(new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, riverPlaneSegments, riverPlaneSegments), riverMaterial)
-
-        mapPlane.rotation.x = -Math.PI / 2
-        riverPlane.rotation.x = -Math.PI / 2
-
-        mapPlane.position.y = 0.1
-        riverPlane.position.y = 2
-
-        scene.add(mapPlane)
-        scene.add(riverPlane)
-
-///////// GPGPU ///////////////
-
-		// const baseGeometry = {}
-		// baseGeometry.instance = new THREE.SphereGeometry(3)
-		// baseGeometry.count = baseGeometry.instance.attributes.position.count
-
-		// const particles = {}
-		// particles.material = new THREE.PointsMaterial( { color: 0x888888 } )
-		// particles.points = new THREE.Points(baseGeometry.instance, particles.material)
-		// scene.add(particles.points)
-
-		// const gpgpu = {}
-		// gpgpu.size = Math.ceil(Math.sqrt(baseGeometry.count))
-		// console.log(gpgpu.size)
-		// gpgpu.computation = new GPUComputationRenderer(gpgpu.size, gpgpu.size, renderer)
-
-		// const baseParticlesTexture = gpgpu.computation.createTexture()
-		
-		
+    mapPlaneMaterial.userData.shader = shader
+}
 
 
 
-		// for(let i = 0; i < baseGeometry.count; i++)
-		// {
-		//     const i3 = i * 3
-		//     const i4 = i * 4
+riverMaterial = new THREE.ShaderMaterial({
+	uniforms: THREE.UniformsUtils.merge( [
+		THREE.UniformsLib[ 'fog' ], {
+			uTime: {value: 0.0}
+		}
+		]),
+	vertexShader: waterV,
+	fragmentShader: waterF,
+    fog: true,
+})
 
-		//     // Position based on geometry
-		//     baseParticlesTexture.image.data[i4 + 0] = baseGeometry.instance.attributes.position.array[i3 + 0]
-		//     baseParticlesTexture.image.data[i4 + 1] = baseGeometry.instance.attributes.position.array[i3 + 1]
-		//     baseParticlesTexture.image.data[i4 + 2] = baseGeometry.instance.attributes.position.array[i3 + 2]
-		//     baseParticlesTexture.image.data[i4 + 3] = 0
-		// }
+mapPlane = new THREE.Mesh(mapPlaneGeometry, mapPlaneMaterial)
+riverPlane = new THREE.Mesh(new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, riverPlaneSegments, riverPlaneSegments), riverMaterial)
 
-		// // AFTER FILLING baseParticlesTexture !!!!!!!!
+mapPlane.rotation.x = -Math.PI / 2
+riverPlane.rotation.x = -Math.PI / 2
 
-		// gpgpu.particlesVariable = gpgpu.computation.addVariable('uParticles', gpgpuParticlesShader, baseParticlesTexture)
-		// gpgpu.computation.setVariableDependencies(gpgpu.particlesVariable, [ gpgpu.particlesVariable ])
-		// gpgpu.computation.init()
+mapPlane.position.y = 0.1
+riverPlane.position.y = 2
 
-		// gpgpu.debug = new THREE.Mesh(
-		//     new THREE.PlaneGeometry(3, 3),
-		//     new THREE.MeshBasicMaterial({ map: gpgpu.computation.getCurrentRenderTarget(gpgpu.particlesVariable).texture })
-		// )
-		// gpgpu.debug.position.x = 3
-		// scene.add(gpgpu.debug)
-
-
-	////////////////////////////////////
-
-
-
-
+scene.add(mapPlane)
+scene.add(riverPlane)
 
 //////////////// FRAGCOLOR PLANE ////////////////////
-
-
-
 
 const fragColorPlaneGeometry = new THREE.PlaneGeometry(fragColorPlaneWidth, fragColorPlaneHeight, fragColorPlaneSegments, fragColorPlaneSegments)
 
@@ -762,27 +304,7 @@ fragColorPlane.position.y = 0.1
 //scene.add(fragColorPlane) // plane with fragcolor
 
 
-  //       const gpgpu1 = {}
-		// gpgpu1.size = Math.ceil(Math.sqrt(geometry1.attributes.position.count))
-		// console.log({sssss: gpgpu1.size})
-		// gpgpu1.computation = new GPUComputationRenderer(gpgpu1.size, gpgpu1.size, renderer)
-
-		// const myFilter2 = gpgpu1.computation.createShaderMaterial( landF, { theTexture: { value: null } } );
-
-
-		
-
-		// gpgpu1.computation.init()
-
-// 		console.log({inputTexture})
-
-
-
-
-
 ///////////////
-
-
 
 
 // Параметры:
@@ -1157,7 +679,6 @@ setTimeout(() => {
 
 	servObj.grassMaterial = grassMaterial
 
-	//const grasses = new InstancedMesh2(grassGeometry, grassMaterial)
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
 
 	grassGeometry.attributes.iscale.needsUpdate = true
@@ -1351,9 +872,9 @@ function animate() {
 
 	//if(scene.getObjectByName("oblako")) scene.getObjectByName("oblako").position.setFromSphericalCoords(200, Math.PI/2 - 0.15, oblakoPhi)
 
-	oblakoMass.map((oblako, i) => {
-		oblakoPhiMass[i][2] += 0.001
-		oblako.position.setFromSphericalCoords(oblakoPhiMass[i][0], oblakoPhiMass[i][1], oblakoPhiMass[i][2] )
+	servObj.oblakoMass.map((oblako, i) => {
+		servObj.oblakoPhiMass[i][2] += 0.001
+		oblako.position.setFromSphericalCoords(servObj.oblakoPhiMass[i][0], servObj.oblakoPhiMass[i][1], servObj.oblakoPhiMass[i][2] )
 	})	
 
 	stats1.begin();
@@ -1364,7 +885,7 @@ function animate() {
 
 	
 
-	//composer.renderer.render();
+	
      //controls.update();
     if(activeCamera.update) activeCamera.update(deltaTime);
 
@@ -1392,7 +913,6 @@ function animate() {
 	renderer.setRenderTarget(null);
 	renderer.render(scene, activeCamera)
 	renderer.setRenderTarget(null);
-	//composer.render();
 
 
 
