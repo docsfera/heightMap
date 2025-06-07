@@ -3,8 +3,8 @@ import * as THREE from "three";
 import waterV from '../shaders/water/vertex.glsl'
 import waterF from '../shaders/water/fragment.glsl'
 
-const mapPlaneWidth = 200
-const mapPlaneHeight = 200
+const mapPlaneWidth = 800
+const mapPlaneHeight = 800
 const mapPlaneSegments = 400
 const mapPlaneDisplacementScale = 20
 

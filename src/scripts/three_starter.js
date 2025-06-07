@@ -151,8 +151,9 @@ setTimeout(() => {
         pixels
     )
 
-	const grasses = getGrass(mask, pixels, tt)
-	scene.add(grasses)
+	const grasses = getGrass(mask, pixels, tt, scene)
+	scene.add(grasses.grasses)
+	scene.add(grasses.grassesLOD)
 
 	gui.add(grasses.position, 'x').min(-20).max(20)
 	gui.add(grasses.position, 'z').min(-20).max(20)

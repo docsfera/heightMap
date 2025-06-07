@@ -5,11 +5,11 @@ import landV from '../shaders/gpgpu/landV.glsl'
 
 const textureLoader = new THREE.TextureLoader()
 
-const fragColorPlaneWidth = 200
-const fragColorPlaneHeight = 200
+const fragColorPlaneWidth = 400
+const fragColorPlaneHeight = 400
 const fragColorPlaneSegments = 1000 //mapPlaneSegments//mapPlaneSegments
 
-const wh = 200
+const wh = 400 // расширение травы !!!!!!
 
 const planePositionsSize = 5
 
