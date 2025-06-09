@@ -11,8 +11,8 @@ export const gg = (pixels, tt, scene) => {
     const verticesArr = [];
     let j = 0
     for (let i = 0; i < pixels.length; i += 4) {
-        const x = pixels[i] / 3;
-        const y = pixels[i + 1] / 3;
+        const x = pixels[i];
+        const y = pixels[i + 1];
         const z = pixels[i + 2]  * textureScaleZ;
         if (z > 5) { // x !== 0 || y !== 0 || z !== 0 Фильтруем пустые пиксели
             vertexPositions.push(new THREE.Vector3(x, y, z));
@@ -60,7 +60,7 @@ export const gg = (pixels, tt, scene) => {
 	const planeByTexture = new THREE.Mesh(planeByTextureGeometry, planeByTextureMaterial)
 	planeByTexture.rotation.x = -Math.PI / 2
 	planeByTexture.updateMatrixWorld(true)
-	scene.add(planeByTexture)
+	//scene.add(planeByTexture)
 
 	console.warn({planeByTexture})
 
@@ -126,7 +126,7 @@ const ggLOD = (pixels, tt, scene) => {
 }
 
 export const getGrass = (mask, pixels, tt, scene) => {
-	const grassCount = 400000
+	const grassCount = 200000
 	// UV-координаты для текстур
 	const grassUvs = new Float32Array([
 		// Первый треугольник
@@ -216,11 +216,13 @@ export const getGrass = (mask, pixels, tt, scene) => {
 	})
 	servObj.grassMaterial = grassMaterial
 
+	let mm = new THREE.MeshBasicMaterial({color: "red"})
+
 	const planeByTexture = gg(pixels, tt, scene)
-	const planeByTextureLOD = ggLOD(pixels, tt, scene)
+	//const planeByTextureLOD = ggLOD(pixels, tt, scene)
 
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
-	const grassesLOD = new THREE.InstancedMesh(grassGeometryLOD, grassMaterial, grassCount)
+	const grassesLOD = new THREE.InstancedMesh(grassGeometryLOD, grassMaterial, grassCount * 10)
 
 	//grassGeometry.attributes.iscale.needsUpdate = true
 
@@ -228,14 +230,22 @@ export const getGrass = (mask, pixels, tt, scene) => {
 	const planeByTextureVertexsPositions = planeByTexture.geometry.attributes.position.array
 
 	const planeByTextureVerticesVectorsLOD = []
-	const planeByTextureVertexsPositionsLOD = planeByTextureLOD.geometry.attributes.position.array
+	//const planeByTextureVertexsPositionsLOD = planeByTextureLOD.geometry.attributes.position.array
+
+	//console.log(planeByTextureVertexsPositions)
 
 	for (let i = 0; i < planeByTextureVertexsPositions.length; i += 3) {
-		planeByTextureVerticesVectors.push(new THREE.Vector3(planeByTextureVertexsPositions[i], planeByTextureVertexsPositions[i+1], planeByTextureVertexsPositions[i+2]))
+		if(planeByTextureVertexsPositions[i+1] > -50 && planeByTextureVertexsPositions[i+1] < 50 && planeByTextureVertexsPositions[i] > -50 && planeByTextureVertexsPositions[i] < 50) {
+			planeByTextureVerticesVectors.push(new THREE.Vector3(planeByTextureVertexsPositions[i], planeByTextureVertexsPositions[i+1], planeByTextureVertexsPositions[i+2]))
+		}else{
+			planeByTextureVerticesVectorsLOD.push(new THREE.Vector3(planeByTextureVertexsPositions[i], planeByTextureVertexsPositions[i+1], planeByTextureVertexsPositions[i+2]))
+		}
 	}
-	for (let i = 0; i < planeByTextureVertexsPositionsLOD.length; i += 3) {
-		planeByTextureVerticesVectorsLOD.push(new THREE.Vector3(planeByTextureVertexsPositionsLOD[i], planeByTextureVertexsPositionsLOD[i+1], planeByTextureVertexsPositionsLOD[i+2]))
-	}
+	console.log(planeByTextureVerticesVectors)
+	console.log(planeByTextureVerticesVectorsLOD)
+	// for (let i = 0; i < planeByTextureVertexsPositionsLOD.length; i += 3) {
+	// 	planeByTextureVerticesVectorsLOD.push(new THREE.Vector3(planeByTextureVertexsPositionsLOD[i], planeByTextureVertexsPositionsLOD[i+1], planeByTextureVertexsPositionsLOD[i+2]))
+	// }
 
 	const prevRandoms = new Set();
 	const dummy = new THREE.Object3D();
@@ -245,9 +255,11 @@ export const getGrass = (mask, pixels, tt, scene) => {
 
 	for (let i = 0; i < grassCount; i++) {
 		let random
-	    do {
-	        random = Math.floor(Math.random() * planeByTextureVerticesVectors.length)
-	    } while (prevRandoms.has(random))
+	    // do {
+	    //     random = Math.floor(Math.random() * planeByTextureVerticesVectors.length)
+	    // } while (prevRandoms.has(random))
+
+			random = Math.floor(Math.random() * planeByTextureVerticesVectors.length)
 
 	    prevRandoms.add(random)
 
@@ -258,11 +270,21 @@ export const getGrass = (mask, pixels, tt, scene) => {
 		dummy.updateMatrix();
 		grasses.setMatrixAt(i, dummy.matrix)
 	}
-	for (let i = 0; i < grassCount; i++) {
+	let u = 0
+	let urand = 0
+	for (let i = 0; i < grassCount * 10; i++) {
 		let random
-	    do {
-	        random = Math.floor(Math.random() * planeByTextureVerticesVectorsLOD.length)
-	    } while (prevRandomsLOD.has(random))
+		
+	    // do {
+	    //     random = Math.floor(Math.random() * planeByTextureVerticesVectorsLOD.length)
+		// 	u = u+1
+			
+	    // } while (prevRandomsLOD.has(random))
+
+			random = Math.floor(Math.random() * planeByTextureVerticesVectorsLOD.length)
+			if(prevRandomsLOD.has(random)) urand ++
+
+			
 
 	    prevRandomsLOD.add(random)
 
@@ -274,13 +296,19 @@ export const getGrass = (mask, pixels, tt, scene) => {
 		grassesLOD.setMatrixAt(i, dummyLOD.matrix)
 	}
 
-	grasses.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+	console.log(u)
+	console.log(planeByTextureVerticesVectorsLOD.length, grassCount)
+	console.log({urand})
+
+	grasses.instanceMatrix.setUsage(THREE.StaticDrawUsage)
 	grasses.instanceMatrix.needsUpdate = true
 	grasses.scale.z = -1
 
-	grassesLOD.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+	grassesLOD.instanceMatrix.setUsage(THREE.StaticDrawUsage)
 	grassesLOD.instanceMatrix.needsUpdate = true
 	grassesLOD.scale.z = -1
+
+	console.warn(grassesLOD.frustumCulled)
 	
 
 	return {grasses, grassesLOD}
