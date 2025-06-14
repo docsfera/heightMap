@@ -31,6 +31,9 @@ import {addMapPlane, addRiverPlane} from "./engine/mapPlane.js"
 import {getFragColorPlane, getCameraFragColorPlane, getSceneFragColorPlane, getRenderTarget} from "./engine/displacementPlane.js"
 import {getGrass} from "./engine/grass.js"
 
+
+import MovingController from './engine/MovingController.js';
+
 const container3D = document.querySelector(".d3d-container")
 const foreground = document.querySelector(".foreground")
 
@@ -68,6 +71,7 @@ bgFolder.add(scene.fog, 'far')
 let activeCamera
 scene.setActiveCamera = (camera, isfps = false) => {
 	activeCamera = camera
+	servObj.activeCamera = activeCamera
 
 	if(!isfps){
 		onResize(scene.activeRenderer, activeCamera, container3D)
@@ -274,6 +278,10 @@ function animate() {
 	stats.triangles = renderer.info.render.triangles
 	stats.geometries = renderer.info.memory.geometries
 	stats.textures = renderer.info.memory.textures
+
+	if (servObj.characterController) {
+		servObj.characterController.update(deltaTime, scene);
+	}
 
 	stats1.end()
 
