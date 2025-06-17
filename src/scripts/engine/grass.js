@@ -222,7 +222,7 @@ export const getGrass = (mask, pixels, tt, scene) => {
 	//const planeByTextureLOD = ggLOD(pixels, tt, scene)
 
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
-	const grassesLOD = new THREE.InstancedMesh(grassGeometryLOD, grassMaterial, grassCount * 10)
+	const grassesLOD = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount * 10)
 
 	//grassGeometry.attributes.iscale.needsUpdate = true
 

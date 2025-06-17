@@ -73,6 +73,8 @@ scene.setActiveCamera = (camera, isfps = false) => {
 	activeCamera = camera
 	servObj.activeCamera = activeCamera
 
+	if(activeCamera.controls) activeCamera.controls.enabled = false
+
 	if(!isfps){
 		onResize(scene.activeRenderer, activeCamera, container3D)
 		onResize(annRenderer, activeCamera, container3D)
@@ -87,7 +89,7 @@ scene.composer = null
 let positionRenderTarget , positionScene, positionCamera, positionMesh
 
 const textureLoader = new THREE.TextureLoader()
-const displacement = textureLoader.load('./3d/lod.png')
+const displacement = textureLoader.load('./3d/lod.png') //map7
 const mask = textureLoader.load('./3d/mask.png')
 const riverPlane = addRiverPlane(scene)
 

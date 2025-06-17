@@ -9,7 +9,7 @@ void main(){
 	vec3 newPos = position;
 
 	 vec4 worldPosition = modelMatrix * instanceMatrix * vec4(newPos, 1.0);
-    vTerrainUV = (worldPosition.xz + vec2(1000.0)) / 200.0; // Для плоскости 200x200 ////////////////////////////////////////// 200!!!!! TODO
+    vTerrainUV = (worldPosition.xz + vec2(400.0)) / 800.0; // Для плоскости 800x800 ////////////////////////////////////////// 800!!!!! TODO (для 200 было vec2(1000.0)) / 200.0
 
 	
 

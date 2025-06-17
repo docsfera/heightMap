@@ -11,8 +11,8 @@ class MovingController {
     this.action.play();
     
     // Параметры движения
-    this.moveSpeed = 0.1;
-    this.rotationSpeed = 0.05;
+    this.moveSpeed = 0.2;
+    this.rotationSpeed = 0.02;
     
     // Настройка управления
     this.keys = {};
@@ -54,7 +54,7 @@ class MovingController {
       this.model.rotation.y -= this.rotationSpeed;
     }
 
-    const cameraOffset = new THREE.Vector3(0, 2, 5);
+    const cameraOffset = new THREE.Vector3(0, 5, -30);
     
     // Применяем вращение персонажа к смещению камеры
     cameraOffset.applyQuaternion(this.model.quaternion);
@@ -63,16 +63,17 @@ class MovingController {
     //this.camera.position.copy(this.model.position.clone().add(cameraOffset));
 
     const v = this.model.position.clone().add(cameraOffset)
-    window.servObj.activeCamera.controls.moveTo(v.x, v.y, v.z)
+    window.servObj.activeCamera.position.set(v.x, v.y, v.z)
     
     // Направляем камеру на персонажа (немного выше его позиции)
     const lookAtPosition = this.model.position.clone();
     lookAtPosition.y += 1; // Смотрим на уровень груди персонажа
 
-    //this.camera.lookAt(lookAtPosition);
 
-    window.servObj.activeCamera.controls._target0 = new THREE.Vector3(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z)
-    window.servObj.activeCamera.controls._targetEnd = new THREE.Vector3(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z)
+    window.servObj.activeCamera.lookAt(lookAtPosition);
+
+    // window.servObj.activeCamera.controls._target0 = new THREE.Vector3(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z)
+    // window.servObj.activeCamera.controls._targetEnd = new THREE.Vector3(lookAtPosition.x, lookAtPosition.y, lookAtPosition.z)
 
     //window.servObj.activeCamera.controls.update()
 
