@@ -12,6 +12,8 @@ import { clippingPlanes } from "./clipping_planes.js";
 import * as Camera from "./Camera.js";
 
 import { proceduralEnvironmentHandler } from './procedural_envmap.js';
+import { EffectComposer, RenderPass } from 'postprocessing';
+import { GodraysPass } from 'three-good-godrays';
 import Stats from 'stats-js'
 
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
@@ -44,6 +46,11 @@ const renderer = new THREE.WebGLRenderer({
 	outputColorSpace: THREE.SRGBColorSpace,
     stencil: true,
 });
+
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = true;
+
 // renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const canvas = renderer.domElement;
 container3D.appendChild(canvas);
@@ -68,12 +75,14 @@ bgFolder.add(scene.fog, 'near')
 bgFolder.add(scene.fog, 'far')
 
 
+
+
 let activeCamera
 scene.setActiveCamera = (camera, isfps = false) => {
 	activeCamera = camera
 	servObj.activeCamera = activeCamera
 
-	if(activeCamera.controls) activeCamera.controls.enabled = false
+	//if(activeCamera.controls) activeCamera.controls.enabled = false
 
 	if(!isfps){
 		onResize(scene.activeRenderer, activeCamera, container3D)
@@ -83,13 +92,20 @@ scene.setActiveCamera = (camera, isfps = false) => {
 }
 scene.activeRenderer = renderer
 scene.renderer = renderer
-scene.composer = null
+
+const composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
+
+const renderPass = new RenderPass(scene, activeCamera);
+renderPass.renderToScreen = false;
+composer.addPass(renderPass);
+
+scene.composer = composer
 
 
 let positionRenderTarget , positionScene, positionCamera, positionMesh
 
 const textureLoader = new THREE.TextureLoader()
-const displacement = textureLoader.load('./3d/lod.png') //map7
+const displacement = textureLoader.load('./3d/hh.png') //map7
 const mask = textureLoader.load('./3d/mask.png')
 const riverPlane = addRiverPlane(scene)
 
@@ -103,7 +119,7 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		loadModels()
 
 		//Init block
-		proceduralEnvironmentHandler.init(scene, renderer) // нет тени из-заэ того
+		//proceduralEnvironmentHandler.init(scene, renderer) // нет тени из-заэ того
 		animations.initHandler(scene)
 		activeCamera = new Camera.Perspective(canvas)
 		controls = new OrbitControls(activeCamera, renderer.domElement)
@@ -127,13 +143,46 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 const clock = new THREE.Clock()
 
-// const light = new THREE.DirectionalLight(0xfff0dd, 1);
-// light.position.set(10, 20, 10);
-// light.castShadow = true;
-// scene.add(light);
+const light = new THREE.DirectionalLight(0xfff0dd, 10);
+light.position.set(50, 100, 50);
+light.castShadow = true;
+light.shadow.mapSize.width = 6666
+light.shadow.mapSize.height = 6666
+light.shadow.camera.near = 0.5;
+light.shadow.camera.far = 500000000;
+light.shadow.camera.left = -300;
+light.shadow.camera.right = 300;
+light.shadow.camera.top = 300;
+light.shadow.camera.bottom = -300;
+
+console.log("_")
+console.log(light.shadow.camera)
+scene.add(light);
+
+servObj.light = light
+
+const cube = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshStandardMaterial({color: "red"}))
+cube.position.set(-49.5, 18, -10)
+cube.castShadow = true
+cube.receiveShadow = true
+scene.add(cube)
+
+const plane = new THREE.Mesh(new THREE.PlaneGeometry(50, 50, 100, 100), new THREE.MeshStandardMaterial({color: "gray", side: THREE.DoubleSide}))
+plane.position.set(-49.5, 14, 0)
+plane.rotation.x = -Math.PI / 2
+plane.receiveShadow = true
+scene.add(plane)
+
+
+const lightHelper = new THREE.DirectionalLightHelper(light);
+const shadowHelper = new THREE.CameraHelper(light.shadow.camera);
+scene.add(lightHelper);
+scene.add(shadowHelper);
+
+
 
 // Заполняющий свет
-scene.add(new THREE.AmbientLight(0x80a0ff, 0.4))
+//scene.add(new THREE.AmbientLight(0x80a0ff, 0.4))
 
 ////////////////// MAP GEOMETRY ////////////
 
@@ -224,6 +273,16 @@ document.addEventListener("keydown", e => {
 	}
 })
 
+// setTimeout(() => {
+// 	console.log("1")
+// 	scene.traverse(obj => {
+// 		if (obj instanceof THREE.Mesh) {
+// 			obj.castShadow = true;
+// 			obj.receiveShadow = true;
+// 		}
+// 		});
+// }, 7000)
+
 function animate() {
 	testuTime++
 
@@ -265,15 +324,22 @@ function animate() {
 
 	riverPlane.material.uniforms.uTime.value += 0.01
 
+	//if(servObj.light) light.shadow.camera.updateProjectionMatrix();
+
 	renderer.setRenderTarget(renderTarget)
 	renderer.render(textureScene, textureCamera)
 	renderer.setRenderTarget(null)
 	renderer.render(scene, activeCamera)
+	// scene.composer.render()
 	renderer.setRenderTarget(null)
 
 	if(servObj.grassMaterial){
 		servObj.grassMaterial.uniforms.uTime.value = testuTime
 	}
+
+	scene.children.map(child => {
+		if(child.name == "test") child.rotation.y += 0.01
+	})
 	//annRenderer.render(scene, activeCamera);
 
 	stats.renderCalls = renderer.info.render.calls
@@ -286,6 +352,8 @@ function animate() {
 	}
 
 	stats1.end()
+
+	
 
 	lastTick = t
 }

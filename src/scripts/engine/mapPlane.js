@@ -98,6 +98,7 @@ export const addMapPlane = (displacement, mask, scene) => {
 
     mapPlane.rotation.x = -Math.PI / 2
     mapPlane.position.y = 0.1
+    mapPlane.receiveShadow = true
     scene.add(mapPlane)
 }
 

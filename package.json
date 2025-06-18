@@ -20,6 +20,7 @@
     "stats-js": "^1.0.1",
     "three": "^0.164.1",
     "three-custom-shader-material": "^5.4.0",
+    "three-good-godrays": "^0.7.1",
     "three-outlinepass": "^1.2.0",
     "three-simple-fp-controls": "^1.0.2",
     "tweakpane": "^4.0.4",
