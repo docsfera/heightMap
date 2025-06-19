@@ -39,6 +39,8 @@ import MovingController from './engine/MovingController.js';
 const container3D = document.querySelector(".d3d-container")
 const foreground = document.querySelector(".foreground")
 
+
+
 let controls
 
 const renderer = new THREE.WebGLRenderer({
@@ -143,7 +145,8 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 
 const clock = new THREE.Clock()
 
-const light = new THREE.DirectionalLight(0xfff0dd, 10);
+const light = new THREE.DirectionalLight(0xfff0dd, 5);
+light.color = new THREE.Color(1.0, 0.95, 0.9)
 light.position.set(50, 100, 50);
 light.castShadow = true;
 light.shadow.mapSize.width = 6666
@@ -273,21 +276,230 @@ document.addEventListener("keydown", e => {
 	}
 })
 
-// setTimeout(() => {
-// 	console.log("1")
-// 	scene.traverse(obj => {
-// 		if (obj instanceof THREE.Mesh) {
-// 			obj.castShadow = true;
-// 			obj.receiveShadow = true;
-// 		}
-// 		});
-// }, 7000)
+
+
+
+const godRayMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+        tColor: { value: null },
+        tDepth: { value: null },
+        lightPos: { value: new THREE.Vector2(0.5, 0.7) },
+        cameraNear: { value: 1 },
+        cameraFar: { value: 1000 },
+        density: { value: 0.85 },    // Уменьшено для мягкости
+        decay: { value: 0.97 },      // Увеличено для более длинных лучей
+        weight: { value: 0.15 },     // Оптимально для мягкости
+        exposure: { value: 0.5 },    // Значительно уменьшено
+        resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform sampler2D tColor;
+        uniform sampler2D tDepth;
+        uniform vec2 lightPos;
+        uniform vec2 resolution;
+        uniform float cameraNear;
+        uniform float cameraFar;
+        uniform float density;
+        uniform float decay;
+        uniform float weight;
+        uniform float exposure;
+        
+        varying vec2 vUv;
+        
+        #include <packing>
+        
+        const int NUM_SAMPLES = 350; // Увеличено для сглаживания
+        
+        float readDepth(sampler2D depthSampler, vec2 coord) {
+            float fragCoordZ = texture2D(depthSampler, coord).x;
+            float viewZ = perspectiveDepthToViewZ(fragCoordZ, cameraNear, cameraFar);
+            return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
+        }
+        
+        // Функция плавного перехода
+        float smoothEdge(float depth, float threshold) {
+            float edge = 0.01; // Ширина перехода
+            return smoothstep(threshold - edge, threshold + edge, depth);
+        }
+        
+        void main() {
+            vec4 color = texture2D(tColor, vUv);
+            
+            // Вектор от пикселя к свету
+            vec2 toLight = lightPos - vUv;
+            float distToLight = length(toLight);
+            vec2 dirToLight = toLight / distToLight;
+            
+            // Размер шага с учетом разрешения
+            float stepSize = distToLight / float(NUM_SAMPLES);
+            vec2 delta = dirToLight * stepSize;
+            
+            vec2 currentPos = vUv;
+            float illuminationDecay = 1.0;
+            vec3 accumulatedLight = vec3(0.0);
+            
+            // Плавное ray marching
+            for(int i = 0; i < NUM_SAMPLES; i++) {
+                currentPos += delta;
+                
+                // Проверка выхода за границы экрана
+                if (currentPos.x < 0.0 || currentPos.x > 1.0 || currentPos.y < 0.0 || currentPos.y > 1.0) {
+                    break;
+                }
+                
+                // Чтение глубины с плавным переходом
+                float depth = readDepth(tDepth, currentPos);
+                float visibility = smoothEdge(depth, 0.99); // Плавный переход
+                
+                // Если точка видима (фон)
+                if (visibility > 0.0) {
+                    vec4 sampleColor = texture2D(tColor, currentPos);
+                    
+                    // Учет расстояния для затухания
+                    float distanceFactor = 1.0 - (float(i) / float(NUM_SAMPLES));
+                    
+                    // Накопление света с плавным затуханием
+                    accumulatedLight += sampleColor.rgb * illuminationDecay * weight * visibility * distanceFactor;
+                }
+                
+                // Экспоненциальное затухание
+                illuminationDecay *= decay;
+            }
+            
+            // Смешивание с оригинальным цветом
+            color.rgb += accumulatedLight * exposure * density;
+            
+            // Тонирование в теплый цвет
+            vec3 warmColor = vec3(1.0, 0.9, 0.7);
+            color.rgb *= mix(vec3(1.0), warmColor, accumulatedLight.r * 0.5);
+            
+            gl_FragColor = color;
+        }
+    `
+});
+
+const depthVisualizationMaterial = new THREE.ShaderMaterial({
+	uniforms: {
+        tDepth: { value: null },
+        cameraNear: { value: 10 },
+        cameraFar: { value: 1000 }
+    },
+	vertexShader: `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform sampler2D tDepth;
+        uniform float cameraNear;
+        uniform float cameraFar;
+        varying vec2 vUv;
+        
+        #include <packing>
+        
+        float linearizeDepth(float depth) {
+            float viewZ = perspectiveDepthToViewZ(depth, cameraNear, cameraFar);
+            return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
+        }
+        
+        void main() {
+            float depth = texture2D(tDepth, vUv).x;
+            float linearDepth = linearizeDepth(depth);
+            gl_FragColor = vec4(vec3(linearDepth), 1.0);
+        }
+    `
+})
+
+
+
+const depthQuad = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 2),
+    depthVisualizationMaterial
+);
+const depthVisualizationScene = new THREE.Scene();
+depthVisualizationScene.add(depthQuad);
+
+
+// Создаем плоскость для полностраничного эффекта
+const quad = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 2),
+    godRayMaterial
+);
+const godRayScene = new THREE.Scene();
+godRayScene.add(quad);
+
+// Рендер-таргет
+const depthTarget  = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+depthTarget .depthTexture = new THREE.DepthTexture();
+depthTarget .depthTexture.type = THREE.UnsignedShortType; // или UnsignedIntType
+depthTarget .texture.format = THREE.RGBAFormat;
+
+// 1. Создаем текстуру для рендеринга цвета и глубины
+const colorTarget = new THREE.WebGLRenderTarget(
+    window.innerWidth,
+    window.innerHeight,
+    { 
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat
+    }
+);
+
+function updateLightPosition() {
+    const lightPos = light.position.clone();
+    lightPos.project(activeCamera);
+    
+    // Преобразуем из [-1,1] в [0,1]
+    godRayMaterial.uniforms.lightPos.value.set(
+        (lightPos.x + 1) / 2,
+        (lightPos.y + 1) / 2
+    );
+}
+
+
+let changeRenderTarget = true
+
+document.addEventListener("keydown", e => {
+	if(e.code == "KeyU") changeRenderTarget = !changeRenderTarget
+})
+
+
+const godRayFolder = gui.addFolder('God Rays');
+godRayFolder.add(godRayMaterial.uniforms.density, 'value', 0.0, 1.0).name('Density');
+godRayFolder.add(godRayMaterial.uniforms.exposure, 'value', 0.1, 5.0).name('Exposure');
+godRayFolder.add(godRayMaterial.uniforms.weight, 'value', 0.0, 1.0).name('Weight');
+godRayFolder.add(godRayMaterial.uniforms.decay, 'value', 0.0, 0.99).name('Decay');
+console.log(light)
+godRayFolder.add(light, 'intensity', 0.0, 10).name('intensity');
+
+const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
 function animate() {
 	testuTime++
 
+	let renderCallsCount = 0
+
 	var t = performance.now()
 	var delta = t - lastTick
+
+	if(activeCamera){
+		//console.log(godRayMaterial)
+		godRayMaterial.uniforms.cameraNear.value = activeCamera.near;
+    godRayMaterial.uniforms.cameraFar.value = activeCamera.far;
+	}
+
+	
 
 	//oblakoPhi += 0.1
 
@@ -326,12 +538,60 @@ function animate() {
 
 	//if(servObj.light) light.shadow.camera.updateProjectionMatrix();
 
-	renderer.setRenderTarget(renderTarget)
-	renderer.render(textureScene, textureCamera)
-	renderer.setRenderTarget(null)
-	renderer.render(scene, activeCamera)
-	// scene.composer.render()
-	renderer.setRenderTarget(null)
+	// Рендерим основную сцену в цветовой буфер
+
+	// 1. Сохраняем предыдущую статистику
+    const prevCalls = renderer.info.render.calls;
+    const prevTriangles = renderer.info.render.triangles;
+
+    if(!changeRenderTarget)renderer.setRenderTarget(colorTarget);
+    if(!changeRenderTarget)renderer.render(scene, activeCamera);
+
+	renderCallsCount += renderer.info.render.calls
+
+	
+
+	// 1. Рендерим основную сцену в текстуру
+    if(!changeRenderTarget)renderer.setRenderTarget(depthTarget );
+    if(!changeRenderTarget)renderer.render(scene, activeCamera); // light.shadow.camera
+
+	renderCallsCount += renderer.info.render.calls
+    
+    // 2. Обновляем позицию света
+    const lightScreenPos = light.position.clone();
+    lightScreenPos.project(activeCamera);
+    godRayMaterial.uniforms.lightPos.value.set(
+        (lightScreenPos.x + 1) / 2,
+        (lightScreenPos.y + 1) / 2
+    );
+
+    // 3. Рендерим эффект god rays в отдельную текстуру
+    if(!changeRenderTarget) godRayMaterial.uniforms.tDepth.value = depthTarget.texture;
+	if(!changeRenderTarget) godRayMaterial.uniforms.tColor.value = colorTarget.texture;
+
+    // Рендерим эффект god rays
+    renderer.setRenderTarget(null);
+    if(!changeRenderTarget)renderer.render(godRayScene, orthoCamera);
+
+	renderCallsCount += renderer.info.render.calls
+
+	
+
+    // 4. Рендерим основную сцену поверх эффекта
+   	if(changeRenderTarget) renderer.render(scene, activeCamera); // ДОБАВЛЕНО
+
+	renderCallsCount += renderer.info.render.calls
+
+    const mainSceneCalls = renderer.info.render.calls - prevCalls;
+    const mainSceneTriangles = renderer.info.render.triangles - prevTriangles;
+
+    // Дополнительные рендеры
+    renderer.setRenderTarget(renderTarget);
+    renderer.render(textureScene, textureCamera);
+    renderer.setRenderTarget(null);
+	//renderer.setRenderTarget(null);
+	//console.log(activeCamera.position)
+    renderer.render(depthVisualizationScene, activeCamera); // Рендерим визуализацию глубины
 
 	if(servObj.grassMaterial){
 		servObj.grassMaterial.uniforms.uTime.value = testuTime
@@ -341,17 +601,22 @@ function animate() {
 		if(child.name == "test") child.rotation.y += 0.01
 	})
 	//annRenderer.render(scene, activeCamera);
+	
 
-	stats.renderCalls = renderer.info.render.calls
-	stats.triangles = renderer.info.render.triangles
-	stats.geometries = renderer.info.memory.geometries
-	stats.textures = renderer.info.memory.textures
+	stats.renderCalls = renderCallsCount;
+    stats.triangles = mainSceneTriangles;
+    stats.geometries = renderer.info.memory.geometries;
+    stats.textures = renderer.info.memory.textures;
 
 	if (servObj.characterController) {
 		servObj.characterController.update(deltaTime, scene);
 	}
 
 	stats1.end()
+
+	depthVisualizationMaterial.uniforms.tDepth.value = depthTarget.depthTexture;
+// 	depthVisualizationMaterial.uniforms.cameraNear.value = activeCamera.near;
+// depthVisualizationMaterial.uniforms.cameraFar.value = activeCamera.far;	
 
 	
 

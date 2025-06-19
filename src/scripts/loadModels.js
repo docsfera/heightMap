@@ -29,90 +29,90 @@ loader.loadGLTF("./3d/untitled.gltf", async (gltf) => {
 	table.scale.set(5,5,5)
 })
 
-loader.loadGLTF("./3d/rocks.gltf", async (gltf) => {
-	const rocks = gltf.scene
-	console.log({rocks})
-	scene.add(rocks)
-	// rocks.traverse(_ => {
-	// 	if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
-	// })
-	rocks.position.y = 15.5
-	rocks.position.x = 35
-	rocks.scale.set(3,3,3)
-})
-loader.loadGLTF("./3d/chair.gltf", async (gltf) => {
-	const chair = gltf.scene
-	console.log({chair})
-	scene.add(chair)
-	chair.traverse(_ => {
-		if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
-	})
-	chair.position.y = 19
-	chair.position.x = 6
-	chair.scale.set(6,6,6)
-})
-loader.loadGLTF("./3d/wf.gltf", async (gltf) => {
-	const wf = gltf.scene
-	console.log({wf})
-	scene.add(wf)
-	wf.position.y = 15.5
-	wf.position.x = -14
-	wf.position.z = -14
-	//wf.scale.set(0.015,0.015,0.015)
-	wf.scale.set(0.03,0.03,0.03)
+// loader.loadGLTF("./3d/rocks.gltf", async (gltf) => {
+// 	const rocks = gltf.scene
+// 	console.log({rocks})
+// 	scene.add(rocks)
+// 	// rocks.traverse(_ => {
+// 	// 	if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
+// 	// })
+// 	rocks.position.y = 15.5
+// 	rocks.position.x = 35
+// 	rocks.scale.set(3,3,3)
+// })
+// loader.loadGLTF("./3d/chair.gltf", async (gltf) => {
+// 	const chair = gltf.scene
+// 	console.log({chair})
+// 	scene.add(chair)
+// 	chair.traverse(_ => {
+// 		if(_.material && _.material.name == "Outline") _.material.color = new THREE.Color(0,0,0)
+// 	})
+// 	chair.position.y = 19
+// 	chair.position.x = 6
+// 	chair.scale.set(6,6,6)
+// })
+// loader.loadGLTF("./3d/wf.gltf", async (gltf) => {
+// 	const wf = gltf.scene
+// 	console.log({wf})
+// 	scene.add(wf)
+// 	wf.position.y = 15.5
+// 	wf.position.x = -14
+// 	wf.position.z = -14
+// 	//wf.scale.set(0.015,0.015,0.015)
+// 	wf.scale.set(0.03,0.03,0.03)
 
-	const copy = wf.clone()
-	copy.position.x = -14
-	copy.position.z = -14
-	copy.rotation.y = Math.PI / 3
-	scene.add(copy)
+// 	const copy = wf.clone()
+// 	copy.position.x = -14
+// 	copy.position.z = -14
+// 	copy.rotation.y = Math.PI / 3
+// 	scene.add(copy)
 
-	// for (let i = 0; i < 400; i++) {
-	// 	const copy = wf.clone()
-	// 	copy.position.x = (Math.random() - 0.5) * 200
-	// 	copy.position.z = (Math.random() - 0.5) * 200
-	// 	scene.add(copy)
-	// }
-})
+// 	// for (let i = 0; i < 400; i++) {
+// 	// 	const copy = wf.clone()
+// 	// 	copy.position.x = (Math.random() - 0.5) * 200
+// 	// 	copy.position.z = (Math.random() - 0.5) * 200
+// 	// 	scene.add(copy)
+// 	// }
+// })
 
-loader.loadGLTF("./3d/wf2.gltf", async (gltf) => {
-	const wf2 = gltf.scene
-	console.log({wf2})
-	scene.add(wf2)
-	wf2.position.y = 15.5
-	wf2.position.x = -8
-	wf2.position.z = -14
-	//wf.scale.set(0.015,0.015,0.015)
-	wf2.scale.set(5,5,5)
-})
+// loader.loadGLTF("./3d/wf2.gltf", async (gltf) => {
+// 	const wf2 = gltf.scene
+// 	console.log({wf2})
+// 	scene.add(wf2)
+// 	wf2.position.y = 15.5
+// 	wf2.position.x = -8
+// 	wf2.position.z = -14
+// 	//wf.scale.set(0.015,0.015,0.015)
+// 	wf2.scale.set(5,5,5)
+// })
 
-loader.loadGLTF("./3d/pers.gltf", async (gltf) => {
-	const wf2 = gltf.scene
-	console.log({wf2})
-	scene.add(wf2)
-	wf2.name = "pers"
-	wf2.position.y = 15.5
-	wf2.position.x = -8
-	wf2.position.z = 0
+// loader.loadGLTF("./3d/pers.gltf", async (gltf) => {
+// 	const wf2 = gltf.scene
+// 	console.log({wf2})
+// 	scene.add(wf2)
+// 	wf2.name = "pers"
+// 	wf2.position.y = 15.5
+// 	wf2.position.x = -8
+// 	wf2.position.z = 0
 
-	wf2.rotation.y = Math.PI / 2
-	//wf.scale.set(0.015,0.015,0.015)
-	wf2.scale.set(5,5,5)
-})
+// 	wf2.rotation.y = Math.PI / 2
+// 	//wf.scale.set(0.015,0.015,0.015)
+// 	wf2.scale.set(5,5,5)
+// })
 
-loader.loadGLTF("./3d/ttt.glb", async (gltf) => {
-	const wf2 = gltf.scene
-	console.log({wf2})
-	scene.add(wf2)
-	wf2.name = "rt"
-	wf2.position.y = 15.5
-	wf2.position.x = -8
-	wf2.position.z = 0
+// loader.loadGLTF("./3d/ttt.glb", async (gltf) => {
+// 	const wf2 = gltf.scene
+// 	console.log({wf2})
+// 	scene.add(wf2)
+// 	wf2.name = "rt"
+// 	wf2.position.y = 15.5
+// 	wf2.position.x = -8
+// 	wf2.position.z = 0
 
-	wf2.rotation.y = Math.PI / 2
-	//wf.scale.set(0.015,0.015,0.015)
-	wf2.scale.set(0.2,0.2,0.2)
-})
+// 	wf2.rotation.y = Math.PI / 2
+// 	//wf.scale.set(0.015,0.015,0.015)
+// 	wf2.scale.set(0.2,0.2,0.2)
+// })
 
 loader.loadGLTF("./3d/thunk.glb", async (gltf) => {
 	const wf2 = gltf.scene
@@ -132,6 +132,48 @@ loader.loadGLTF("./3d/thunk.glb", async (gltf) => {
 	//wf2.scale.set(0.2,0.2,0.2)
 })
 
+const lightRays = new THREE.Group();
+scene.add(lightRays);
+
+function createLightRay(length = 20, width = 0.8) {
+  const rayGeometry = new THREE.PlaneGeometry(width, length);
+  
+  const rayMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffff99,
+    transparent: true,
+    opacity: 0.3,
+    blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide
+  });
+
+  const ray = new THREE.Mesh(rayGeometry, rayMaterial);
+  ray.rotation.x = Math.PI / 2; // Вертикальная ориентация
+  
+  return ray;
+}
+
+// Генерация лучей
+const rayCount = 15;
+const rays = [];
+
+for (let i = 0; i < rayCount; i++) {
+  const ray = createLightRay(25 + Math.random() * 10, 0.5 + Math.random() * 0.7);
+  
+  // Распределение лучей в случайных направлениях
+  const angle = Math.random() * Math.PI * 2;
+  const distance = 5 + Math.random() * 10;
+  
+  ray.position.x = Math.cos(angle) * distance;
+  ray.position.z = Math.sin(angle) * distance;
+  ray.position.y = 10;
+  
+  // Случайный наклон
+  ray.rotation.z = (Math.random() - 0.5) * 0.5;
+  
+  lightRays.add(ray);
+  rays.push(ray);
+}
+
 loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
 	const pers = gltf.scene
 	//scene.add(pers)
@@ -148,7 +190,7 @@ loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
 
 		const ss = 1 + Math.random()
 		n.scale.set(ss, ss, ss)
-		scene.add(n)
+		//scene.add(n)
 	}
 	for (let i=-25; i < 25; i++) {
 		const n = pers.clone()
@@ -157,7 +199,7 @@ loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
 		const ss = 1 + Math.random()
 		n.scale.set(ss, ss, ss)
 
-		scene.add(n)
+		//scene.add(n)
 	}
 
 	/// rt
