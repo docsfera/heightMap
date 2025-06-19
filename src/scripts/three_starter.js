@@ -485,18 +485,35 @@ godRayFolder.add(light, 'intensity', 0.0, 10).name('intensity');
 
 const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
+// Вспомогательная функция для сбора статистики
+    function renderWithStats(scene, camera, target = null) {
+        
+        renderer.setRenderTarget(target);
+        renderer.render(scene, camera);
+        
+        return {
+            calls: renderer.info.render.calls,
+            triangles: renderer.info.render.triangles
+        };
+    }
+
 function animate() {
 	testuTime++
 
-	let renderCallsCount = 0
+	// Создаем объект для сбора статистики за кадр
+    const frameStats = {
+        calls: 0,
+        triangles: 0,
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures
+    };
 
 	var t = performance.now()
 	var delta = t - lastTick
 
 	if(activeCamera){
-		//console.log(godRayMaterial)
 		godRayMaterial.uniforms.cameraNear.value = activeCamera.near;
-    godRayMaterial.uniforms.cameraFar.value = activeCamera.far;
+    	godRayMaterial.uniforms.cameraFar.value = activeCamera.far;
 	}
 
 	
@@ -544,20 +561,21 @@ function animate() {
     const prevCalls = renderer.info.render.calls;
     const prevTriangles = renderer.info.render.triangles;
 
-    if(!changeRenderTarget)renderer.setRenderTarget(colorTarget);
-    if(!changeRenderTarget)renderer.render(scene, activeCamera);
+     // 1. Рендерим основную сцену в цветовой буфер с измерением статистики
+    if (!changeRenderTarget) {
+        const colorStats = renderWithStats(scene, activeCamera, colorTarget);
+        frameStats.calls += colorStats.calls;
+        frameStats.triangles += colorStats.triangles;
+    }
 
-	renderCallsCount += renderer.info.render.calls
+    // 2. Рендерим глубину с измерением статистики
+    if (!changeRenderTarget) {
+        const depthStats = renderWithStats(scene, activeCamera, depthTarget);
+        frameStats.calls += depthStats.calls;
+        frameStats.triangles += depthStats.triangles;
+    }
 
-	
-
-	// 1. Рендерим основную сцену в текстуру
-    if(!changeRenderTarget)renderer.setRenderTarget(depthTarget );
-    if(!changeRenderTarget)renderer.render(scene, activeCamera); // light.shadow.camera
-
-	renderCallsCount += renderer.info.render.calls
-    
-    // 2. Обновляем позицию света
+    // 3. Обновляем позицию света
     const lightScreenPos = light.position.clone();
     lightScreenPos.project(activeCamera);
     godRayMaterial.uniforms.lightPos.value.set(
@@ -565,33 +583,39 @@ function animate() {
         (lightScreenPos.y + 1) / 2
     );
 
-    // 3. Рендерим эффект god rays в отдельную текстуру
-    if(!changeRenderTarget) godRayMaterial.uniforms.tDepth.value = depthTarget.texture;
-	if(!changeRenderTarget) godRayMaterial.uniforms.tColor.value = colorTarget.texture;
+    // 4. Рендерим эффект god rays с измерением статистики
+    if (!changeRenderTarget) {
+        godRayMaterial.uniforms.tDepth.value = depthTarget.texture;
+        godRayMaterial.uniforms.tColor.value = colorTarget.texture;
+        
+        const godRayStats = renderWithStats(godRayScene, orthoCamera, null);
+        frameStats.calls += godRayStats.calls;
+        frameStats.triangles += godRayStats.triangles;
+    }
 
-    // Рендерим эффект god rays
-    renderer.setRenderTarget(null);
-    if(!changeRenderTarget)renderer.render(godRayScene, orthoCamera);
+    // 5. Рендерим основную сцену (если включен режим)
+    if (changeRenderTarget) {
+        const mainStats = renderWithStats(scene, activeCamera, null);
+        frameStats.calls += mainStats.calls;
+        frameStats.triangles += mainStats.triangles;
+    }
 
-	renderCallsCount += renderer.info.render.calls
+    // 6. Рендерим визуализацию глубины
+    depthVisualizationMaterial.uniforms.tDepth.value = depthTarget.depthTexture;
+    const depthVizStats = renderWithStats(depthVisualizationScene, activeCamera, null);
+    frameStats.calls += depthVizStats.calls;
+    frameStats.triangles += depthVizStats.triangles;
 
-	
-
-    // 4. Рендерим основную сцену поверх эффекта
-   	if(changeRenderTarget) renderer.render(scene, activeCamera); // ДОБАВЛЕНО
-
-	renderCallsCount += renderer.info.render.calls
-
-    const mainSceneCalls = renderer.info.render.calls - prevCalls;
-    const mainSceneTriangles = renderer.info.render.triangles - prevTriangles;
-
-    // Дополнительные рендеры
+    // 7. Рендерим сцену для травы
     renderer.setRenderTarget(renderTarget);
     renderer.render(textureScene, textureCamera);
     renderer.setRenderTarget(null);
-	//renderer.setRenderTarget(null);
-	//console.log(activeCamera.position)
-    renderer.render(depthVisualizationScene, activeCamera); // Рендерим визуализацию глубины
+    
+    // 8. Обновляем статистику
+    stats.renderCalls = frameStats.calls;
+    stats.triangles = frameStats.triangles;
+    stats.geometries = renderer.info.memory.geometries;
+    stats.textures = renderer.info.memory.textures;
 
 	if(servObj.grassMaterial){
 		servObj.grassMaterial.uniforms.uTime.value = testuTime
@@ -601,12 +625,6 @@ function animate() {
 		if(child.name == "test") child.rotation.y += 0.01
 	})
 	//annRenderer.render(scene, activeCamera);
-	
-
-	stats.renderCalls = renderCallsCount;
-    stats.triangles = mainSceneTriangles;
-    stats.geometries = renderer.info.memory.geometries;
-    stats.textures = renderer.info.memory.textures;
 
 	if (servObj.characterController) {
 		servObj.characterController.update(deltaTime, scene);
