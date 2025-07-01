@@ -4,6 +4,17 @@ import grassF from '../shaders/grass/fragment.glsl'
 
 const textureScaleZ = 0.4//0.6
 
+// Функция получения высоты
+function getHeight(plane, x, z) {
+	// const uvX = (x + mapPlaneWidth/2) / mapPlaneWidth;
+	// const uvZ = (z + mapPlaneHeight/2) / mapPlaneHeight;
+	
+	// const texX = Math.floor(uvX * (imageData.width - 1));
+	// const texY = Math.floor((1 - uvZ) * (imageData.height - 1));
+	
+	// return heightData[texY * imageData.width + texX];
+}
+
 export const gg = (pixels, tt, scene) => {
     // Конвертируем обратно в мировые координаты
 	const indicesArr = [] 
@@ -21,7 +32,6 @@ export const gg = (pixels, tt, scene) => {
             j+=3
         }
     }
-    //console.log('Позиции вершин:', vertexPositions);
 
     const planeByTextureVertices = new Float32Array(verticesArr)
 	const planeByTextureIndicesArr = []
@@ -63,6 +73,11 @@ export const gg = (pixels, tt, scene) => {
 	//scene.add(planeByTexture)
 
 	console.warn({planeByTexture})
+
+	planeByTexture.name = "planeByTexture"
+	
+	servObj.vertexPositions = vertexPositions
+	 window.servObj.planeByTexture = planeByTexture
 
 	return planeByTexture
 }

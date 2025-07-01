@@ -115,17 +115,26 @@ loader.loadGLTF("./3d/untitled.gltf", async (gltf) => {
 // })
 
 loader.loadGLTF("./3d/thunk.glb", async (gltf) => {
-	const wf2 = gltf.scene
-	console.log({sha:wf2})
-	scene.add(wf2)
-	wf2.name = "thunk"
-	wf2.position.y = 15.5
-	wf2.position.x = -50
-	wf2.position.z = 0
+	const thunk = gltf.scene
+	//thunk.name = "thunk"
 
-	wf2.children[0].children[0].castShadow = true
+	const forestPosition = new THREE.Vector3(50, 0, 200)
 
-	wf2.rotation.y = Math.PI / 2
+	thunk.position.set(100, 0, 100)
+	scene.add(thunk)
+
+	// for (let i=-25; i < 25; i++) {
+	// 	const t = thunk.clone()
+	// 	t.name = "thunk"
+		
+	// 	t.position.set(forestPosition.x + 100 * (Math.random() - 0.5) * 2, 20, forestPosition.z + 100 * (Math.random() - 0.5) * 2)
+	// 	scene.add(t)
+	// 	t.children[0].children[0].castShadow = true
+	// }
+
+	//wf2.children[0].children[0].castShadow = true
+
+	//thunk.rotation.y = Math.PI / 2
 
 	
 	//wf.scale.set(0.015,0.015,0.015)
@@ -210,35 +219,35 @@ loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
 	f.scale.set(3,3,3)
 	scene.add(f)
 
-	const f1 = pers.clone()
-	f1.name = "test"
-	f1.position.set(-45, 38.5, 0)
-	f1.scale.set(3,3,3)
-	scene.add(f1)
+	// const f1 = pers.clone()
+	// f1.name = "test"
+	// f1.position.set(-45, 38.5, 0)
+	// f1.scale.set(3,3,3)
+	// scene.add(f1)
 
-	const f2 = pers.clone()
-	f2.name = "test"
-	f2.position.set(-55, 36.5, -0)
-	f2.scale.set(3,3,3)
-	scene.add(f2)
+	// const f2 = pers.clone()
+	// f2.name = "test"
+	// f2.position.set(-55, 36.5, -0)
+	// f2.scale.set(3,3,3)
+	// scene.add(f2)
 
-	const f3  = pers.clone()
-	f3.name = "test"
-	f3.position.set(-50, 36.5, -3)
-	f3.scale.set(3,3,3)
-	scene.add(f3)
+	// const f3  = pers.clone()
+	// f3.name = "test"
+	// f3.position.set(-50, 36.5, -3)
+	// f3.scale.set(3,3,3)
+	// scene.add(f3)
 
-	const f4 = pers.clone()
-	f4.name = "test"
-	f4.position.set(-50, 36.5, 3)
-	f4.scale.set(3,3,3)
-	scene.add(f4)
+	// const f4 = pers.clone()
+	// f4.name = "test"
+	// f4.position.set(-50, 36.5, 3)
+	// f4.scale.set(3,3,3)
+	// scene.add(f4)
 
-	f.children[0].castShadow = true
-	f1.children[0].castShadow = true
-	f2.children[0].castShadow = true
-	f3.children[0].castShadow = true
-	f4.children[0].castShadow = true
+	// f.children[0].castShadow = true
+	// f1.children[0].castShadow = true
+	// f2.children[0].castShadow = true
+	// f3.children[0].castShadow = true
+	// f4.children[0].castShadow = true
 
 
 
