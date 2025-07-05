@@ -147,12 +147,12 @@ const clock = new THREE.Clock()
 
 const light = new THREE.DirectionalLight(0xfff0dd, 5);
 light.color = new THREE.Color(1.0, 0.95, 0.9)
-light.position.set(50, 100, 50);
+light.position.set(500, 1100, 500);
 light.castShadow = true;
 light.shadow.mapSize.width = 6666
 light.shadow.mapSize.height = 6666
 light.shadow.camera.near = 0.5;
-light.shadow.camera.far = 500000000;
+light.shadow.camera.far = 5000;
 light.shadow.camera.left = -300;
 light.shadow.camera.right = 300;
 light.shadow.camera.top = 300;
@@ -210,6 +210,7 @@ setTimeout(() => {
     )
 
 	const grasses = getGrass(mask, pixels, tt, scene)
+    servObj.gt = grasses.grasses
 	scene.add(grasses.grasses)
 	scene.add(grasses.grassesLOD)
 

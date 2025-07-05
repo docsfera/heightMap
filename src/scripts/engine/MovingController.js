@@ -17,6 +17,9 @@ class MovingController {
     // Настройка управления
     this.keys = {};
     this.setupControls();
+
+    this.raycaster = new THREE.Raycaster()
+    this.downVector = new THREE.Vector3(0, -1, 0)
     
     
   }
@@ -29,6 +32,11 @@ class MovingController {
     document.addEventListener('keyup', (e) => {
       this.keys[e.key.toLowerCase()] = false;
     });
+  }
+
+  getHeightAtPosition(x, y) {
+    if(!window.servObj.vertexPositions) return null
+    return window.servObj.vertexPositions.filter(v => (Math.abs(v.x - x) < 1 && Math.abs(v.y - y) < 1))[0]
   }
 
   update(deltaTime) {
@@ -53,6 +61,22 @@ class MovingController {
     if (this.keys['d'] || this.keys['arrowright']) {
       this.model.rotation.y -= this.rotationSpeed;
     }
+
+    this.raycaster.set(this.model.position, this.downVector);
+
+    let c = []
+
+    if(window.servObj.gt){
+      c = this.raycaster.intersectObject(window.servObj.gt)
+    }
+    if(c.length > 0){
+      console.log('e', c[0].distance)
+      this.model.position.y = c[0].distance + 10
+    }
+    //console.log(this.raycaster.intersectObject(servObj.scene))
+
+    //const t = this.getHeightAtPosition(this.model.position.x - 100, this.model.position.z - 100)
+    //if(t) console.log(t.z) //this.model.position.y = t.z
 
     const cameraOffset = new THREE.Vector3(0, 5, -30);
     

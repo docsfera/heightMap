@@ -20,6 +20,8 @@ map.wrapS = THREE.RepeatWrapping;
 map.wrapT = THREE.RepeatWrapping;
 map.repeat.set(10, 10); // Масштаб текстуры
 
+
+
 export const addMapPlane = (displacement, mask, scene) => {
     
     sand.wrapS = THREE.RepeatWrapping;
@@ -99,6 +101,7 @@ export const addMapPlane = (displacement, mask, scene) => {
     mapPlane.rotation.x = -Math.PI / 2
     mapPlane.position.y = 0.1
     mapPlane.receiveShadow = true
+    window.servObj.mapPlane = mapPlane
     scene.add(mapPlane)
 }
 
