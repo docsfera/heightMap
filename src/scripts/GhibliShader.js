@@ -1,22 +1,27 @@
-import { Color, Vector3 } from "three";
+import * as THREE from "three";
 
 export const GhibliShader = {
-  uniforms: {
-    colorMap: {
-      value: [
-        new Color("#7ed3b9"),
-        new Color("#6ab9a2"),
-        new Color("#539d87"),
-        new Color("#307e75"),
-      ],
-    },
-    brightnessThresholds: {
-      value: [0.9, 0.45, 0.001],
-    },
-    lightPosition: { value: new Vector3(0, 1500, 0) },
-  },
+  uniforms: THREE.UniformsUtils.merge([
+    THREE.UniformsLib[ 'fog' ], {
+      colorMap: {
+        value: [
+          new THREE.Color("#7ed3b9"),
+          new THREE.Color("#6ab9a2"),
+          new THREE.Color("#539d87"),
+          new THREE.Color("#307e75"),
+        ],
+      },
+      brightnessThresholds: {
+        value: [0.9, 0.45, 0.001],
+      },
+      lightPosition: { value: new THREE.Vector3(0, 1500, 0) },
+      
+    }
+  ]),
+  fog: true,
+  
   vertexShader: /* glsl */ `
-    // Set the precision for data types used in this shader
+    #include <fog_pars_vertex>
     precision highp float;
     precision highp int;
 
@@ -29,8 +34,13 @@ export const GhibliShader = {
       vPosition = position;
 
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+      #include <begin_vertex>
+      #include <project_vertex>
+      #include <fog_vertex>
     }`,
   fragmentShader: /* glsl */ `
+  #include <fog_pars_fragment>
     precision highp float;
     precision highp int;
 
@@ -63,6 +73,8 @@ export const GhibliShader = {
         final = vec4(colorMap[3], 1);
 
       gl_FragColor = vec4( final ) * vec4(1.0);
+
+      #include <fog_fragment>
     }`,
     
 };

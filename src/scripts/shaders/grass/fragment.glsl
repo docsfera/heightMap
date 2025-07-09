@@ -1,3 +1,4 @@
+#include <fog_pars_fragment>
 varying vec2 vUv;
 varying vec2 vTerrainUV;
 uniform sampler2D pathMask;
@@ -14,4 +15,6 @@ void main(){
     //diffuseColor = vec4(clr , 1.0);
 
 	gl_FragColor = vec4(clr, 1.0);
+
+    #include <fog_fragment>
 }

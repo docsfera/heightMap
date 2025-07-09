@@ -123,14 +123,14 @@ loader.loadGLTF("./3d/thunk.glb", async (gltf) => {
 	thunk.position.set(100, 0, 100)
 	scene.add(thunk)
 
-	// for (let i=-25; i < 25; i++) {
-	// 	const t = thunk.clone()
-	// 	t.name = "thunk"
+	for (let i=-25; i < 25; i++) {
+		const t = thunk.clone()
+		t.name = "thunk"
 		
-	// 	t.position.set(forestPosition.x + 100 * (Math.random() - 0.5) * 2, 20, forestPosition.z + 100 * (Math.random() - 0.5) * 2)
-	// 	scene.add(t)
-	// 	t.children[0].children[0].castShadow = true
-	// }
+		t.position.set(forestPosition.x + 100 * (Math.random() - 0.5) * 2, 17, forestPosition.z + 100 * (Math.random() - 0.5) * 2)
+		scene.add(t)
+		t.children[0].children[0].castShadow = true
+	}
 
 	//wf2.children[0].children[0].castShadow = true
 
@@ -218,6 +218,29 @@ loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
 	f.position.set(-50, 34.5, 0)
 	f.scale.set(3,3,3)
 	scene.add(f)
+
+	console.log({tttt: f})
+
+	const forestPosition = new THREE.Vector3(50, 0, 200)
+
+	const thunks = []
+	scene.traverse(ch => ch.name == "thunk" && thunks.push(ch))
+
+	console.log({thunks})
+
+	thunks.map(thunk => {
+		const t = pers.clone()
+		//pers.position.set(100, 0, 100)
+		t.name = "test"
+
+		t.scale.set(3,3,3)
+
+		
+		
+		t.position.set(thunk.position.x, 35, thunk.position.z)
+		scene.add(t)
+		//t.children[0].children[0].castShadow = true
+	})
 
 	// const f1 = pers.clone()
 	// f1.name = "test"

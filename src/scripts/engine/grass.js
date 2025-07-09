@@ -224,10 +224,13 @@ export const getGrass = (mask, pixels, tt, scene) => {
 		vertexShader: grassV,
 		fragmentShader: grassF,
 		side: THREE.DoubleSide,
-		uniforms: {
-			pathMask: { value: mask },
-			uTime: { value: 0.0 }
-		},
+		uniforms: THREE.UniformsUtils.merge([
+			THREE.UniformsLib[ 'fog' ], {
+				pathMask: { value: mask },
+				uTime: { value: 0.0 }
+			}
+		]),
+		fog: true,
 	})
 	servObj.grassMaterial = grassMaterial
 
