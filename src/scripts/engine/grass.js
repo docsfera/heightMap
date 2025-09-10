@@ -224,10 +224,13 @@ export const getGrass = (mask, pixels, tt, scene) => {
 		vertexShader: grassV,
 		fragmentShader: grassF,
 		side: THREE.DoubleSide,
-		uniforms: {
-			pathMask: { value: mask },
-			uTime: { value: 0.0 }
-		},
+		uniforms: THREE.UniformsUtils.merge([
+			THREE.UniformsLib[ 'fog' ], {
+				pathMask: { value: mask },
+				uTime: { value: 0.0 }
+			}
+		]),
+		fog: true,
 	})
 	servObj.grassMaterial = grassMaterial
 
@@ -237,7 +240,7 @@ export const getGrass = (mask, pixels, tt, scene) => {
 	//const planeByTextureLOD = ggLOD(pixels, tt, scene)
 
 	const grasses = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount)
-	const grassesLOD = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount * 10)
+	const grassesLOD = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassCount * 7)
 
 	//grassGeometry.attributes.iscale.needsUpdate = true
 

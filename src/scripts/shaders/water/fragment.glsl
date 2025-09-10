@@ -43,7 +43,7 @@ void main(){
 	    waterColor += vec3(1.0) * specular * 0.5;
 	    
 	    // Output to screen
-	    gl_FragColor = vec4(waterColor, 1.0);
+	    gl_FragColor = vec4(waterColor, 0.5);
 
 
 	    #include <fog_fragment>
