@@ -107,7 +107,7 @@ scene.composer = composer
 let positionRenderTarget , positionScene, positionCamera, positionMesh
 
 const textureLoader = new THREE.TextureLoader()
-const displacement = textureLoader.load('./3d/hh.png') //map7
+const displacement = textureLoader.load('./3d/44.png') //map7
 const mask = textureLoader.load('./3d/mask.png')
 const riverPlane = addRiverPlane(scene)
 
@@ -148,15 +148,15 @@ const clock = new THREE.Clock()
 const light = new THREE.DirectionalLight(0xfff0dd, 5);
 light.color = new THREE.Color(1.0, 0.95, 0.9)
 light.position.set(500, 1100, 500);
-light.castShadow = true;
-light.shadow.mapSize.width = 6666
-light.shadow.mapSize.height = 6666
-light.shadow.camera.near = 0.5;
-light.shadow.camera.far = 5000;
-light.shadow.camera.left = -300;
-light.shadow.camera.right = 300;
-light.shadow.camera.top = 300;
-light.shadow.camera.bottom = -300;
+// light.castShadow = true;
+// light.shadow.mapSize.width = 6666
+// light.shadow.mapSize.height = 6666
+// light.shadow.camera.near = 0.5;
+// light.shadow.camera.far = 5000;
+// light.shadow.camera.left = -300;
+// light.shadow.camera.right = 300;
+// light.shadow.camera.top = 300;
+// light.shadow.camera.bottom = -300;
 
 console.log("_")
 console.log(light.shadow.camera)
@@ -164,17 +164,17 @@ scene.add(light);
 
 servObj.light = light
 
-const cube = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshStandardMaterial({color: "red"}))
-cube.position.set(-49.5, 18, -10)
-cube.castShadow = true
-cube.receiveShadow = true
-scene.add(cube)
+// const cube = new THREE.Mesh(new THREE.BoxGeometry(5, 5, 5), new THREE.MeshStandardMaterial({color: "red"}))
+// cube.position.set(-49.5, 18, -10)
+// cube.castShadow = true
+// cube.receiveShadow = true
+// scene.add(cube)
 
-const plane = new THREE.Mesh(new THREE.PlaneGeometry(50, 50, 100, 100), new THREE.MeshStandardMaterial({color: "gray", side: THREE.DoubleSide}))
-plane.position.set(-49.5, 14, 0)
-plane.rotation.x = -Math.PI / 2
-plane.receiveShadow = true
-scene.add(plane)
+// const plane = new THREE.Mesh(new THREE.PlaneGeometry(50, 50, 100, 100), new THREE.MeshStandardMaterial({color: "gray", side: THREE.DoubleSide}))
+// plane.position.set(-49.5, 14, 0)
+// plane.rotation.x = -Math.PI / 2
+// plane.receiveShadow = true
+// scene.add(plane)
 
 
 const lightHelper = new THREE.DirectionalLightHelper(light);
@@ -185,7 +185,7 @@ scene.add(shadowHelper);
 
 
 // Заполняющий свет
-//scene.add(new THREE.AmbientLight(0x80a0ff, 0.4))
+//scene.add(new THREE.AmbientLight(0x000000, 40.4))
 
 ////////////////// MAP GEOMETRY ////////////
 
@@ -199,6 +199,8 @@ const pixels = new Float32Array(tt * tt * 4)
 const textureCamera = getCameraFragColorPlane()
 const textureScene = getSceneFragColorPlane(displacement)
 const renderTarget = getRenderTarget(scene, tt)
+
+let isOnceGrassRenderTarget = false
 
 setTimeout(() => {
 	activeCamera.controls.setLookAt(-55.474687739807365, 27.167925110735894, 41.81928096736683, 10.814844136319213, 18.044455466157817, 3.187493220094487)
@@ -214,8 +216,10 @@ setTimeout(() => {
 	scene.add(grasses.grasses)
 	scene.add(grasses.grassesLOD)
 
-	gui.add(grasses.position, 'x').min(-20).max(20)
-	gui.add(grasses.position, 'z').min(-20).max(20)
+    isOnceGrassRenderTarget = true
+
+	// gui.add(grasses.position, 'x').min(-20).max(20)
+	// gui.add(grasses.position, 'z').min(-20).max(20)
 }, 1000)
 
 const stats = {
@@ -280,213 +284,213 @@ document.addEventListener("keydown", e => {
 
 
 
-const godRayMaterial = new THREE.ShaderMaterial({
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    uniforms: {
-        tColor: { value: null },
-        tDepth: { value: null },
-        lightPos: { value: new THREE.Vector2(0.5, 0.7) },
-        cameraNear: { value: 1 },
-        cameraFar: { value: 1000 },
-        density: { value: 0.85 },    // Уменьшено для мягкости
-        decay: { value: 0.97 },      // Увеличено для более длинных лучей
-        weight: { value: 0.15 },     // Оптимально для мягкости
-        exposure: { value: 0.5 },    // Значительно уменьшено
-        resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
-    },
-    vertexShader: `
-        varying vec2 vUv;
-        void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform sampler2D tColor;
-        uniform sampler2D tDepth;
-        uniform vec2 lightPos;
-        uniform vec2 resolution;
-        uniform float cameraNear;
-        uniform float cameraFar;
-        uniform float density;
-        uniform float decay;
-        uniform float weight;
-        uniform float exposure;
+// const godRayMaterial = new THREE.ShaderMaterial({
+//     transparent: true,
+//     blending: THREE.AdditiveBlending,
+//     uniforms: {
+//         tColor: { value: null },
+//         tDepth: { value: null },
+//         lightPos: { value: new THREE.Vector2(0.5, 0.7) },
+//         cameraNear: { value: 1 },
+//         cameraFar: { value: 1000 },
+//         density: { value: 0.85 },    // Уменьшено для мягкости
+//         decay: { value: 0.97 },      // Увеличено для более длинных лучей
+//         weight: { value: 0.15 },     // Оптимально для мягкости
+//         exposure: { value: 0.5 },    // Значительно уменьшено
+//         resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+//     },
+//     vertexShader: `
+//         varying vec2 vUv;
+//         void main() {
+//             vUv = uv;
+//             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+//         }
+//     `,
+//     fragmentShader: `
+//         uniform sampler2D tColor;
+//         uniform sampler2D tDepth;
+//         uniform vec2 lightPos;
+//         uniform vec2 resolution;
+//         uniform float cameraNear;
+//         uniform float cameraFar;
+//         uniform float density;
+//         uniform float decay;
+//         uniform float weight;
+//         uniform float exposure;
         
-        varying vec2 vUv;
+//         varying vec2 vUv;
         
-        #include <packing>
+//         #include <packing>
         
-        const int NUM_SAMPLES = 350; // Увеличено для сглаживания
+//         const int NUM_SAMPLES = 350; // Увеличено для сглаживания
         
-        float readDepth(sampler2D depthSampler, vec2 coord) {
-            float fragCoordZ = texture2D(depthSampler, coord).x;
-            float viewZ = perspectiveDepthToViewZ(fragCoordZ, cameraNear, cameraFar);
-            return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
-        }
+//         float readDepth(sampler2D depthSampler, vec2 coord) {
+//             float fragCoordZ = texture2D(depthSampler, coord).x;
+//             float viewZ = perspectiveDepthToViewZ(fragCoordZ, cameraNear, cameraFar);
+//             return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
+//         }
         
-        // Функция плавного перехода
-        float smoothEdge(float depth, float threshold) {
-            float edge = 0.01; // Ширина перехода
-            return smoothstep(threshold - edge, threshold + edge, depth);
-        }
+//         // Функция плавного перехода
+//         float smoothEdge(float depth, float threshold) {
+//             float edge = 0.01; // Ширина перехода
+//             return smoothstep(threshold - edge, threshold + edge, depth);
+//         }
         
-        void main() {
-            vec4 color = texture2D(tColor, vUv);
+//         void main() {
+//             vec4 color = texture2D(tColor, vUv);
             
-            // Вектор от пикселя к свету
-            vec2 toLight = lightPos - vUv;
-            float distToLight = length(toLight);
-            vec2 dirToLight = toLight / distToLight;
+//             // Вектор от пикселя к свету
+//             vec2 toLight = lightPos - vUv;
+//             float distToLight = length(toLight);
+//             vec2 dirToLight = toLight / distToLight;
             
-            // Размер шага с учетом разрешения
-            float stepSize = distToLight / float(NUM_SAMPLES);
-            vec2 delta = dirToLight * stepSize;
+//             // Размер шага с учетом разрешения
+//             float stepSize = distToLight / float(NUM_SAMPLES);
+//             vec2 delta = dirToLight * stepSize;
             
-            vec2 currentPos = vUv;
-            float illuminationDecay = 1.0;
-            vec3 accumulatedLight = vec3(0.0);
+//             vec2 currentPos = vUv;
+//             float illuminationDecay = 1.0;
+//             vec3 accumulatedLight = vec3(0.0);
             
-            // Плавное ray marching
-            for(int i = 0; i < NUM_SAMPLES; i++) {
-                currentPos += delta;
+//             // Плавное ray marching
+//             for(int i = 0; i < NUM_SAMPLES; i++) {
+//                 currentPos += delta;
                 
-                // Проверка выхода за границы экрана
-                if (currentPos.x < 0.0 || currentPos.x > 1.0 || currentPos.y < 0.0 || currentPos.y > 1.0) {
-                    break;
-                }
+//                 // Проверка выхода за границы экрана
+//                 if (currentPos.x < 0.0 || currentPos.x > 1.0 || currentPos.y < 0.0 || currentPos.y > 1.0) {
+//                     break;
+//                 }
                 
-                // Чтение глубины с плавным переходом
-                float depth = readDepth(tDepth, currentPos);
-                float visibility = smoothEdge(depth, 0.99); // Плавный переход
+//                 // Чтение глубины с плавным переходом
+//                 float depth = readDepth(tDepth, currentPos);
+//                 float visibility = smoothEdge(depth, 0.99); // Плавный переход
                 
-                // Если точка видима (фон)
-                if (visibility > 0.0) {
-                    vec4 sampleColor = texture2D(tColor, currentPos);
+//                 // Если точка видима (фон)
+//                 if (visibility > 0.0) {
+//                     vec4 sampleColor = texture2D(tColor, currentPos);
                     
-                    // Учет расстояния для затухания
-                    float distanceFactor = 1.0 - (float(i) / float(NUM_SAMPLES));
+//                     // Учет расстояния для затухания
+//                     float distanceFactor = 1.0 - (float(i) / float(NUM_SAMPLES));
                     
-                    // Накопление света с плавным затуханием
-                    accumulatedLight += sampleColor.rgb * illuminationDecay * weight * visibility * distanceFactor;
-                }
+//                     // Накопление света с плавным затуханием
+//                     accumulatedLight += sampleColor.rgb * illuminationDecay * weight * visibility * distanceFactor;
+//                 }
                 
-                // Экспоненциальное затухание
-                illuminationDecay *= decay;
-            }
+//                 // Экспоненциальное затухание
+//                 illuminationDecay *= decay;
+//             }
             
-            // Смешивание с оригинальным цветом
-            color.rgb += accumulatedLight * exposure * density;
+//             // Смешивание с оригинальным цветом
+//             color.rgb += accumulatedLight * exposure * density;
             
-            // Тонирование в теплый цвет
-            vec3 warmColor = vec3(1.0, 0.9, 0.7);
-            color.rgb *= mix(vec3(1.0), warmColor, accumulatedLight.r * 0.5);
+//             // Тонирование в теплый цвет
+//             vec3 warmColor = vec3(1.0, 0.9, 0.7);
+//             color.rgb *= mix(vec3(1.0), warmColor, accumulatedLight.r * 0.5);
             
-            gl_FragColor = color;
-        }
-    `
-});
+//             gl_FragColor = color;
+//         }
+//     `
+// });
 
-const depthVisualizationMaterial = new THREE.ShaderMaterial({
-	uniforms: {
-        tDepth: { value: null },
-        cameraNear: { value: 10 },
-        cameraFar: { value: 1000 }
-    },
-	vertexShader: `
-        varying vec2 vUv;
-        void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform sampler2D tDepth;
-        uniform float cameraNear;
-        uniform float cameraFar;
-        varying vec2 vUv;
+// const depthVisualizationMaterial = new THREE.ShaderMaterial({
+// 	uniforms: {
+//         tDepth: { value: null },
+//         cameraNear: { value: 10 },
+//         cameraFar: { value: 1000 }
+//     },
+// 	vertexShader: `
+//         varying vec2 vUv;
+//         void main() {
+//             vUv = uv;
+//             gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+//         }
+//     `,
+//     fragmentShader: `
+//         uniform sampler2D tDepth;
+//         uniform float cameraNear;
+//         uniform float cameraFar;
+//         varying vec2 vUv;
         
-        #include <packing>
+//         #include <packing>
         
-        float linearizeDepth(float depth) {
-            float viewZ = perspectiveDepthToViewZ(depth, cameraNear, cameraFar);
-            return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
-        }
+//         float linearizeDepth(float depth) {
+//             float viewZ = perspectiveDepthToViewZ(depth, cameraNear, cameraFar);
+//             return viewZToOrthographicDepth(viewZ, cameraNear, cameraFar);
+//         }
         
-        void main() {
-            float depth = texture2D(tDepth, vUv).x;
-            float linearDepth = linearizeDepth(depth);
-            gl_FragColor = vec4(vec3(linearDepth), 1.0);
-        }
-    `
-})
+//         void main() {
+//             float depth = texture2D(tDepth, vUv).x;
+//             float linearDepth = linearizeDepth(depth);
+//             gl_FragColor = vec4(vec3(linearDepth), 1.0);
+//         }
+//     `
+// })
 
 
 
-const depthQuad = new THREE.Mesh(
-    new THREE.PlaneGeometry(2, 2),
-    depthVisualizationMaterial
-);
-const depthVisualizationScene = new THREE.Scene();
-depthVisualizationScene.add(depthQuad);
+// const depthQuad = new THREE.Mesh(
+//     new THREE.PlaneGeometry(2, 2),
+//     depthVisualizationMaterial
+// );
+// const depthVisualizationScene = new THREE.Scene();
+// depthVisualizationScene.add(depthQuad);
 
 
-// Создаем плоскость для полностраничного эффекта
-const quad = new THREE.Mesh(
-    new THREE.PlaneGeometry(2, 2),
-    godRayMaterial
-);
-const godRayScene = new THREE.Scene();
-godRayScene.add(quad);
+// // Создаем плоскость для полностраничного эффекта
+// const quad = new THREE.Mesh(
+//     new THREE.PlaneGeometry(2, 2),
+//     godRayMaterial
+// );
+// const godRayScene = new THREE.Scene();
+// godRayScene.add(quad);
 
-// Рендер-таргет
-const depthTarget  = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
-depthTarget .depthTexture = new THREE.DepthTexture();
-depthTarget .depthTexture.type = THREE.UnsignedShortType; // или UnsignedIntType
-depthTarget .texture.format = THREE.RGBAFormat;
+// // Рендер-таргет
+// const depthTarget  = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight);
+// depthTarget .depthTexture = new THREE.DepthTexture();
+// depthTarget .depthTexture.type = THREE.UnsignedShortType; // или UnsignedIntType
+// depthTarget .texture.format = THREE.RGBAFormat;
 
-// 1. Создаем текстуру для рендеринга цвета и глубины
-const colorTarget = new THREE.WebGLRenderTarget(
-    window.innerWidth,
-    window.innerHeight,
-    { 
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        format: THREE.RGBAFormat
-    }
-);
+// // 1. Создаем текстуру для рендеринга цвета и глубины
+// const colorTarget = new THREE.WebGLRenderTarget(
+//     window.innerWidth,
+//     window.innerHeight,
+//     { 
+//         minFilter: THREE.LinearFilter,
+//         magFilter: THREE.LinearFilter,
+//         format: THREE.RGBAFormat
+//     }
+// );
 
-function updateLightPosition() {
-    const lightPos = light.position.clone();
-    lightPos.project(activeCamera);
+// function updateLightPosition() {
+//     const lightPos = light.position.clone();
+//     lightPos.project(activeCamera);
     
-    // Преобразуем из [-1,1] в [0,1]
-    godRayMaterial.uniforms.lightPos.value.set(
-        (lightPos.x + 1) / 2,
-        (lightPos.y + 1) / 2
-    );
-}
+//     // Преобразуем из [-1,1] в [0,1]
+//     godRayMaterial.uniforms.lightPos.value.set(
+//         (lightPos.x + 1) / 2,
+//         (lightPos.y + 1) / 2
+//     );
+// }
 
 
 let changeRenderTarget = true
 
-document.addEventListener("keydown", e => {
-	if(e.code == "KeyU") changeRenderTarget = !changeRenderTarget
-})
+// document.addEventListener("keydown", e => {
+// 	if(e.code == "KeyU") changeRenderTarget = !changeRenderTarget
+// })
 
 
-const godRayFolder = gui.addFolder('God Rays');
-godRayFolder.add(godRayMaterial.uniforms.density, 'value', 0.0, 1.0).name('Density');
-godRayFolder.add(godRayMaterial.uniforms.exposure, 'value', 0.1, 5.0).name('Exposure');
-godRayFolder.add(godRayMaterial.uniforms.weight, 'value', 0.0, 1.0).name('Weight');
-godRayFolder.add(godRayMaterial.uniforms.decay, 'value', 0.0, 0.99).name('Decay');
-console.log(light)
-godRayFolder.add(light, 'intensity', 0.0, 10).name('intensity');
+// const godRayFolder = gui.addFolder('God Rays');
+// godRayFolder.add(godRayMaterial.uniforms.density, 'value', 0.0, 1.0).name('Density');
+// godRayFolder.add(godRayMaterial.uniforms.exposure, 'value', 0.1, 5.0).name('Exposure');
+// godRayFolder.add(godRayMaterial.uniforms.weight, 'value', 0.0, 1.0).name('Weight');
+// godRayFolder.add(godRayMaterial.uniforms.decay, 'value', 0.0, 0.99).name('Decay');
+// console.log(light)
+// godRayFolder.add(light, 'intensity', 0.0, 10).name('intensity');
 
-const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+// const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-// Вспомогательная функция для сбора статистики
+// // Вспомогательная функция для сбора статистики
     function renderWithStats(scene, camera, target = null) {
         
         renderer.setRenderTarget(target);
@@ -512,10 +516,10 @@ function animate() {
 	var t = performance.now()
 	var delta = t - lastTick
 
-	if(activeCamera){
-		godRayMaterial.uniforms.cameraNear.value = activeCamera.near;
-    	godRayMaterial.uniforms.cameraFar.value = activeCamera.far;
-	}
+	// if(activeCamera){
+	// 	godRayMaterial.uniforms.cameraNear.value = activeCamera.near;
+    // 	godRayMaterial.uniforms.cameraFar.value = activeCamera.far;
+	// }
 
 	
 
@@ -523,10 +527,10 @@ function animate() {
 
 	//if(scene.getObjectByName("oblako")) scene.getObjectByName("oblako").position.setFromSphericalCoords(200, Math.PI/2 - 0.15, oblakoPhi)
 
-	servObj.oblakoMass.map((oblako, i) => {
-		servObj.oblakoPhiMass[i][2] += 0.001
-		oblako.position.setFromSphericalCoords(servObj.oblakoPhiMass[i][0], servObj.oblakoPhiMass[i][1], servObj.oblakoPhiMass[i][2])
-	})	
+	// servObj.oblakoMass.map((oblako, i) => {
+	// 	servObj.oblakoPhiMass[i][2] += 0.001
+	// 	oblako.position.setFromSphericalCoords(servObj.oblakoPhiMass[i][0], servObj.oblakoPhiMass[i][1], servObj.oblakoPhiMass[i][2])
+	// })	
 
 	stats1.begin()
   
@@ -562,37 +566,37 @@ function animate() {
     const prevCalls = renderer.info.render.calls;
     const prevTriangles = renderer.info.render.triangles;
 
-     // 1. Рендерим основную сцену в цветовой буфер с измерением статистики
-    if (!changeRenderTarget) {
-        const colorStats = renderWithStats(scene, activeCamera, colorTarget);
-        frameStats.calls += colorStats.calls;
-        frameStats.triangles += colorStats.triangles;
-    }
+    //  // 1. Рендерим основную сцену в цветовой буфер с измерением статистики
+    // if (!changeRenderTarget) {
+    //     const colorStats = renderWithStats(scene, activeCamera, colorTarget);
+    //     frameStats.calls += colorStats.calls;
+    //     frameStats.triangles += colorStats.triangles;
+    // }
 
-    // 2. Рендерим глубину с измерением статистики
-    if (!changeRenderTarget) {
-        const depthStats = renderWithStats(scene, activeCamera, depthTarget);
-        frameStats.calls += depthStats.calls;
-        frameStats.triangles += depthStats.triangles;
-    }
+    // // 2. Рендерим глубину с измерением статистики
+    // if (!changeRenderTarget) {
+    //     const depthStats = renderWithStats(scene, activeCamera, depthTarget);
+    //     frameStats.calls += depthStats.calls;
+    //     frameStats.triangles += depthStats.triangles;
+    // }
 
     // 3. Обновляем позицию света
-    const lightScreenPos = light.position.clone();
-    lightScreenPos.project(activeCamera);
-    godRayMaterial.uniforms.lightPos.value.set(
-        (lightScreenPos.x + 1) / 2,
-        (lightScreenPos.y + 1) / 2
-    );
+    //const lightScreenPos = light.position.clone();
+    //lightScreenPos.project(activeCamera);
+    // godRayMaterial.uniforms.lightPos.value.set(
+    //     (lightScreenPos.x + 1) / 2,
+    //     (lightScreenPos.y + 1) / 2
+    // );
 
-    // 4. Рендерим эффект god rays с измерением статистики
-    if (!changeRenderTarget) {
-        godRayMaterial.uniforms.tDepth.value = depthTarget.texture;
-        godRayMaterial.uniforms.tColor.value = colorTarget.texture;
+    // // 4. Рендерим эффект god rays с измерением статистики
+    // if (!changeRenderTarget) {
+    //     godRayMaterial.uniforms.tDepth.value = depthTarget.texture;
+    //     godRayMaterial.uniforms.tColor.value = colorTarget.texture;
         
-        const godRayStats = renderWithStats(godRayScene, orthoCamera, null);
-        frameStats.calls += godRayStats.calls;
-        frameStats.triangles += godRayStats.triangles;
-    }
+    //     const godRayStats = renderWithStats(godRayScene, orthoCamera, null);
+    //     frameStats.calls += godRayStats.calls;
+    //     frameStats.triangles += godRayStats.triangles;
+    // }
 
     // 5. Рендерим основную сцену (если включен режим)
     if (changeRenderTarget) {
@@ -602,15 +606,23 @@ function animate() {
     }
 
     // 6. Рендерим визуализацию глубины
-    depthVisualizationMaterial.uniforms.tDepth.value = depthTarget.depthTexture;
-    const depthVizStats = renderWithStats(depthVisualizationScene, activeCamera, null);
-    frameStats.calls += depthVizStats.calls;
-    frameStats.triangles += depthVizStats.triangles;
+    // depthVisualizationMaterial.uniforms.tDepth.value = depthTarget.depthTexture;
+    // const depthVizStats = renderWithStats(depthVisualizationScene, activeCamera, null);
+    // frameStats.calls += depthVizStats.calls;
+    // frameStats.triangles += depthVizStats.triangles;
 
     // 7. Рендерим сцену для травы
-    renderer.setRenderTarget(renderTarget);
-    renderer.render(textureScene, textureCamera);
-    renderer.setRenderTarget(null);
+    // renderer.setRenderTarget(scene);
+    // renderer.render(scene, activeCamera);
+
+    // + 6 fps :)
+    if(!isOnceGrassRenderTarget){
+        renderer.setRenderTarget(renderTarget);
+        renderer.render(textureScene, textureCamera);
+        renderer.setRenderTarget(null);
+    }
+
+   
     
     // 8. Обновляем статистику
     stats.renderCalls = frameStats.calls;
@@ -622,20 +634,18 @@ function animate() {
 		servObj.grassMaterial.uniforms.uTime.value = testuTime
 	}
 
-	scene.children.map(child => {
-		if(child.name == "test") child.rotation.y += 0.01
-	})
+	// scene.children.map(child => {
+	// 	if(child.name == "test") child.rotation.y += 0.01
+	// })
 	//annRenderer.render(scene, activeCamera);
 
-	if (servObj.characterController) {
-		servObj.characterController.update(deltaTime, scene);
-	}
+	// if (servObj.characterController) {
+	// 	servObj.characterController.update(deltaTime, scene);
+	// }
 
 	stats1.end()
 
-	depthVisualizationMaterial.uniforms.tDepth.value = depthTarget.depthTexture;
-// 	depthVisualizationMaterial.uniforms.cameraNear.value = activeCamera.near;
-// depthVisualizationMaterial.uniforms.cameraFar.value = activeCamera.far;	
+	// depthVisualizationMaterial.uniforms.tDepth.value = depthTarget.depthTexture;
 
 	
 

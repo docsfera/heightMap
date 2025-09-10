@@ -86,7 +86,7 @@ export const addMapPlane = (displacement, mask, scene) => {
             // Смешивание с плавным переходом
             //float mixFactor = smoothstep(0.3, 0.7, 1.0 - maskValue);
             float mixFactor = step(0.7, 1.0 - maskValue);
-            vec4 finalColor = mix(baseColor + vec4(1.0, 1.0, 0.0, 1.0), pathColor + vec4(0.0, 1.0, 0.0, 1.0), mixFactor);
+            vec4 finalColor = mix(baseColor + vec4(0.0, 0.0, 0.0, 1.0), pathColor + vec4(0.0, 0.4, 0.1, 1.0), mixFactor);
             //vec4 finalColor = mix(vec4(0.2, 0.2, 0.2, 1.0), vec4(1.0, 0.0, 0.0, 1.0), mixFactor);
             
             diffuseColor *= finalColor;
@@ -115,7 +115,9 @@ export const addRiverPlane = (scene) => {
         vertexShader: waterV,
         fragmentShader: waterF,
         fog: true,
+        transparent: true
     })
+    riverMaterial.depthWrite = false;
 
     const riverPlane = new THREE.Mesh(new THREE.PlaneGeometry(mapPlaneWidth, mapPlaneHeight, riverPlaneSegments, riverPlaneSegments), riverMaterial)
     riverPlane.rotation.x = - Math.PI / 2

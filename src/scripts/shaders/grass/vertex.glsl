@@ -6,6 +6,10 @@ uniform float uTime;
 
 void main(){
 
+	#include <begin_vertex>
+	#include <project_vertex>
+	#include <fog_vertex>
+
 	vUv = uv;
 	vec3 newPos = position;
 
@@ -33,8 +37,6 @@ void main(){
 
 	gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(newPos, 1.0);
 
-	#include <begin_vertex>
-	#include <project_vertex>
-	#include <fog_vertex>
+	
 
 }
