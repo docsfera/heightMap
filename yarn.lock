@@ -236,6 +236,11 @@ three-custom-shader-material@^5.4.0:
     glsl-tokenizer "^2.1.5"
     object-hash "^3.0.0"
 
+three-dragcontrols@^0.88.2:
+  version "0.88.2"
+  resolved "https://registry.npmjs.org/three-dragcontrols/-/three-dragcontrols-0.88.2.tgz"
+  integrity sha512-Qqhbo7+K5TAeqlYlUiI0EBp14uI9nbgoLANas3p4v4kz3h5HmOlComV9UhLI2x3BtdCdcHSuiyDL7sTrtP772w==
+
 three-good-godrays@^0.7.1:
   version "0.7.1"
   resolved "https://registry.npmjs.org/three-good-godrays/-/three-good-godrays-0.7.1.tgz"
@@ -251,7 +256,7 @@ three-simple-fp-controls@^1.0.2:
   resolved "https://registry.npmjs.org/three-simple-fp-controls/-/three-simple-fp-controls-1.0.2.tgz"
   integrity sha512-gRW/ezgCibjA/qGG7Ep5D1I7kZHO5+Rzorarkh2tImUT5PCGhiRMLGgLvzHBFLLJO+nXY2WQRT/VonPfVWHXKQ==
 
-three@*, three@^0.164.1, "three@>= 0.125.0 <= 0.167.0", "three@>= 0.157.0 < 0.171.0", three@>=0.126.1, three@>=0.137, three@>=0.154, three@>=0.159.0:
+three@*, three@^0.164.1, "three@>= 0.125.0 <= 0.167.0", "three@>= 0.157.0 < 0.171.0", "three@>= 0.86 <= 1.0", three@>=0.126.1, three@>=0.137, three@>=0.154, three@>=0.159.0:
   version "0.164.1"
   resolved "https://registry.npmjs.org/three/-/three-0.164.1.tgz"
   integrity sha512-iC/hUBbl1vzFny7f5GtqzVXYjMJKaTPxiCxXfrvVdBi1Sf+jhd1CAkitiFwC7mIBFCo3MrDLJG97yisoaWig0w==

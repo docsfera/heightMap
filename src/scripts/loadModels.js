@@ -323,6 +323,39 @@ export const loadModels = () => {
 
 // 	})
 
+
+// loader.loadGLTF("./3d/t.gltf", async (gltf) => {
+// 	const wf2 = gltf.scene
+// 	console.log({wf2})
+// 	scene.add(wf2)
+// 	wf2.position.y = 15.5
+// 	wf2.position.x = -8
+// 	wf2.position.z = -14
+// 	//wf.scale.set(0.015,0.015,0.015)
+// 	wf2.scale.set(5,5,5)
+// })
+
+loader.loadGLTF("./3d/trees.glb", async (gltf) => { // pers
+	const pers = gltf.scene
+	//scene.add(pers)
+
+	pers.getObjectByName("Foliage").material = new THREE.ShaderMaterial(GhibliShader)
+	pers.position.y = 15.5
+	pers.position.x = 100
+	pers.position.z = -40
+
+	scene.add(pers)
+
+	const cube = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({color:"#ffff00"}))
+	cube.position.y = 15
+	scene.add(cube)
+
+	servObj.dragControls.objects = [pers.children[0], cube]
+	// servObj.dragControls.update()
+
+	console.log(servObj.dragControls)
+})
+
 /////////////////////////////////////////////////////////////////////////////////////
 }
 
