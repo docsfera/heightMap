@@ -158,8 +158,8 @@ light.position.set(500, 1100, 500);
 // light.shadow.camera.top = 300;
 // light.shadow.camera.bottom = -300;
 
-console.log("_")
-console.log(light.shadow.camera)
+// console.log("_")
+// console.log(light.shadow.camera)
 scene.add(light);
 
 servObj.light = light

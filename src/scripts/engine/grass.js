@@ -259,8 +259,8 @@ export const getGrass = (mask, pixels, tt, scene) => {
 			planeByTextureVerticesVectorsLOD.push(new THREE.Vector3(planeByTextureVertexsPositions[i], planeByTextureVertexsPositions[i+1], planeByTextureVertexsPositions[i+2]))
 		}
 	}
-	console.log(planeByTextureVerticesVectors)
-	console.log(planeByTextureVerticesVectorsLOD)
+	// console.log(planeByTextureVerticesVectors)
+	// console.log(planeByTextureVerticesVectorsLOD)
 	// for (let i = 0; i < planeByTextureVertexsPositionsLOD.length; i += 3) {
 	// 	planeByTextureVerticesVectorsLOD.push(new THREE.Vector3(planeByTextureVertexsPositionsLOD[i], planeByTextureVertexsPositionsLOD[i+1], planeByTextureVertexsPositionsLOD[i+2]))
 	// }

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
 class MovingController {
   constructor(model, animation) {
@@ -112,22 +114,39 @@ class MovingController {
 
 // Пример использования
 
-const loader = new FBXLoader();
+const loader = new GLTFLoader();
 let controller;
 
-loader.load('Running.fbx', (fbx) => {
-  const model = fbx;
-  
-  // Настройка модели
-  model.scale.set(0.02, 0.02, 0.02);
-  model.position.set(0, 15.5, 0);
-  
-  servObj.scene.add(model);
-  
-  // Создание контроллера
-  controller = new MovingController(model, fbx.animations[0]);
+// Подключаем VRM-плагин
+loader.register((parser) => new VRMLoaderPlugin(parser));
 
-  servObj.characterController = controller
+loader.load('3d/docsfera.vrm', (gltf) => {
+  const vrm = gltf.userData.vrm;
+
+  // Оптимизация
+  VRMUtils.removeUnnecessaryJoints(vrm.scene);
+  VRMUtils.removeUnnecessaryVertices(vrm.scene);
+
+  servObj.scene.add(vrm.scene);
+  vrm.scene.position.y = 6.2
+  vrm.scene.scale.set(5,5,5)
+
+
 });
+
+// loader.load('Running.fbx', (fbx) => {
+//   const model = fbx;
+  
+//   // Настройка модели
+//   model.scale.set(0.02, 0.02, 0.02);
+//   model.position.set(0, 15.5, 0);
+  
+//   servObj.scene.add(model);
+  
+//   // Создание контроллера
+//   controller = new MovingController(model, fbx.animations[0]);
+
+//   servObj.characterController = controller
+// });
 
 export default MovingController
