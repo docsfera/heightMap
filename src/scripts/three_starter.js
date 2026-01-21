@@ -35,6 +35,7 @@ import {getGrass} from "./engine/grass.js"
 
 
 import MovingController from './engine/MovingController.js';
+import DragControls from 'three-dragcontrols';
 
 const container3D = document.querySelector(".d3d-container")
 const foreground = document.querySelector(".foreground")
@@ -140,6 +141,20 @@ export const sceneLoadPromise = new Promise(function (resolve, reject) {
 		
 		animate()
 		animations.fadeIn()
+
+		
+
+		const dragControls = new DragControls([], activeCamera, renderer.domElement)
+		servObj.dragControls = dragControls
+
+		dragControls.addEventListener( 'dragstart', function ( event ) {
+			//event.object.material.emissive.set( 0xaaaaaa );
+			console.log("0")
+
+		})
+
+		// console.warn(dragControls)
+		// console.log(activeCamera)
 	})
 })
 
@@ -501,6 +516,9 @@ let changeRenderTarget = true
             triangles: renderer.info.render.triangles
         };
     }
+
+
+
 
 function animate() {
 	testuTime++
